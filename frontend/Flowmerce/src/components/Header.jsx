@@ -12,7 +12,7 @@ const Header = () => {
             <input 
             type="text" 
             placeholder='Search...' 
-            className='bg-amber-100/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600'
+            className='bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600'
             />
         </div>
         <div className='flex items-center space-x-5'>
@@ -20,7 +20,7 @@ const Header = () => {
                 <GoBell size={28} />
                 <span 
                 className='absolute top-0 right-0 -mt-1 -mr-1 flex
-                justify-center items-center bg-amber-600 text-white 
+                justify-center items-center bg-[#FF5C00] text-white 
                 font-semibold text-[10px] w-5 h-4 rounded-full border-2 border-white'>9</span>
             </button>
             <img 
