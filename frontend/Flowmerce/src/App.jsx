@@ -3,7 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Products from './pages/Products'
 import Layout from './components/Layout'
 import Home from './pages/Home'
-import Members from './pages/Users'
+import Users from './pages/Users'
 import Orders from './pages/Orders'
 import Analytics from './pages/Analytics'
 import Reports from './pages/Reports'
@@ -14,7 +14,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path='members' element={<Members />} />
+          <Route path='users' element={<Users />} />
           <Route path='products' element={<Products />} />
           <Route path='orders' element={<Orders />} />
           <Route path='analytics' element={<Analytics />} />
