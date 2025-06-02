@@ -13,7 +13,7 @@ const Sidebar = () => {
 
   const SIDEBAR_LINKS = [
     { id: 1, path: "/", name: "Dashboard", icon: LuBox },
-    { id: 2, path: "/members", name: "Members", icon: TbUsers },
+    { id: 2, path: "/users", name: "Users", icon: TbUsers },
     { id: 3, path: "/products", name: "Products", icon: MdInventory },
     { id: 5, path: "/orders", name: "Orders", icon: MdShoppingCart },
     { id: 4, path: "/analytics", name: "Analytics", icon: TbBrandGoogleAnalytics },
