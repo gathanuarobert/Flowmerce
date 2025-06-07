@@ -52,3 +52,23 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+    
+
+class Category(models.Model):   
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+
+    def __str__(self):
+        return self.title
+
+class Product(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    price = models.PositiveIntegerField()
+    category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='products/', blank=True, null=True)
+    stock = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=255, choices=[('available', 'Available'), ('out_of_stock', 'Out of Stock')], default='available')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)     
