@@ -1,6 +1,7 @@
 from django.contrib.auth.models import UserManager, AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 
 class CustomUserManager(UserManager):
     def _create_user(self, email, password, **extra_fields):
@@ -68,7 +69,30 @@ class Product(models.Model):
     price = models.PositiveIntegerField()
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
+    quantity = models.PositiveIntegerField(default=0)
     stock = models.PositiveIntegerField(default=0)
+    sku = models.CharField(max_length=100, unique=True)
+    tags = models.ManyToManyField('Tag', related_name='products', blank=True)
     status = models.CharField(max_length=255, choices=[('available', 'Available'), ('out_of_stock', 'Out of Stock')], default='available')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)     
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Product'
+        verbose_name_plural = 'Products'
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+class Tag(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+
+    def __str__(self):
+        return self.title
