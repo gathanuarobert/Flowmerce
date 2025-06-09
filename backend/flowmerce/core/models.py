@@ -71,7 +71,7 @@ class Product(models.Model):
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     quantity = models.PositiveIntegerField(default=0)
     stock = models.PositiveIntegerField(default=0)
-    sku = models.CharField(max_length=100, unique=True)
+    sku = models.CharField(max_length=255, unique=True)
     tags = models.ManyToManyField('Tag', related_name='products', blank=True)
     status = models.CharField(max_length=255, choices=[('available', 'Available'), ('out_of_stock', 'Out of Stock')], default='available')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -116,10 +116,10 @@ class Order(models.Model):
         verbose_name_plural = 'Orders'
         
     def __str__(self):
-        return f'Order {self.id} by {self.user.email}'
+        return f'Order {self.id} by {self.employee.email}'
     
     def save (self, *args, **kwargs):
-        if self.product_title and self.quantity:
+        if self.product and self.quantity:
            self.amount = self.quantity * self.product.price 
         super().save(*args, **kwargs)   
                
@@ -136,3 +136,4 @@ class OrderItem(models.Model):
     @property
     def total_price(self):
         return self.quantity * self.price        
+    
