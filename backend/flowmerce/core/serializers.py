@@ -19,7 +19,7 @@ class Orderserializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_title = serializers.CharField(source='product_title', read_only=True)     
+    product_title = serializers.CharField(source='product.title', read_only=True)     
     class Meta:
         model = OrderItem
-        field = '__all__'   
+        fields = '__all__'   
