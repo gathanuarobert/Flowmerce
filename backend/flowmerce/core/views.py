@@ -13,22 +13,10 @@ class CustomPagination(PageNumberPagination):
     max_page_size = 100
 
 class UserListView(generics.ListAPIView):
-    permission_classes = permissions.AllowAny
+    permission_classes = [permissions.AllowAny]
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = CustomPagination
-
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            token = RefreshToken.for_user(user)
-            return Response({
-                'user': serializer.data,
-                'access': str(token.access_token),
-                'refresh': str(token)
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class UserRegisterView(APIView):
     permission_classes = [permissions.AllowAny]
