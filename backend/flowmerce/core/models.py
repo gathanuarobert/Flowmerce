@@ -100,6 +100,7 @@ class Tag(models.Model):
 
 class Order(models.Model):
     employee = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
+    employee_email = models.EmailField()
     product_title = models.CharField(max_length=255)
     product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
     product_price = models.PositiveIntegerField(default=0)
