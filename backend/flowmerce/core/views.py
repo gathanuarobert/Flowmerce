@@ -5,7 +5,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework import generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, Product, Order, OrderItem
-from .serializers import UserSerializer, ProductSerializer, Orderserializer, OrderItemSerializer
+from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
