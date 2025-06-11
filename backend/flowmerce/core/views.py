@@ -75,3 +75,9 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Product.objects.all()
     serializer_class = ProductSerializer         
+
+class OrderListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    pagination_class = CustomPagination
