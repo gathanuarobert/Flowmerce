@@ -88,9 +88,13 @@ class OrderCreateView(generics.CreateAPIView):
     serializer_class = OrderSerializer   
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(employee=self.request.user)
+
+class IsOrderOwner(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return obj.employee == request.user
 
 class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAdminUser | IsOrderOwner]
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
