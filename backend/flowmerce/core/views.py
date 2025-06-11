@@ -85,10 +85,12 @@ class OrderListView(generics.ListAPIView):
 class OrderCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Order.objects.all()
-    serializer_class = OrderSerializer    
+    serializer_class = OrderSerializer   
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAdminUser]
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    pagination_class = CustomPagination    
