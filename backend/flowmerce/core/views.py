@@ -14,7 +14,7 @@ class CustomPagination(PageNumberPagination):
     max_page_size = 100
 
 class UserListView(generics.ListAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = CustomPagination
@@ -50,3 +50,4 @@ class UserLoginAPIVIEW(APIView):
                 'user': UserSerializer(user).data
             })
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    
