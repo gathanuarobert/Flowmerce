@@ -59,3 +59,11 @@ class UserLogoutView(APIView):
         token = RefreshToken(refresh_token)
         token.blacklist()
         return Response({'message': 'Log out successfully'}, status=status.HTTP_205_RESET_CONTENT)
+    
+class ProductListView(generics.ListAPIView):
+    permissions_class = [permissions.IsAuthenticated]
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    pagination_class = CustomPagination
+    
+        
