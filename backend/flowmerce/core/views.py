@@ -4,6 +4,7 @@ from rest_framework import status, permissions
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import generics
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 from .models import User, Product, Order, OrderItem
 from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer
 
@@ -32,3 +33,20 @@ class UserRegisterView(APIView):
                 'refresh': str(token)
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+    
+class UserLoginAPIVIEW(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')    
+        password = request.data.get('password')
+        user = authenticate(request, email=email, password=password)
+
+        if user:
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
+            })
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
