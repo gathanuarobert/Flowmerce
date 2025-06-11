@@ -81,3 +81,8 @@ class OrderListView(generics.ListAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     pagination_class = CustomPagination
+
+class OrderCreateView(generics.CreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer    
