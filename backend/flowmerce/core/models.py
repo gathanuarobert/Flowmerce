@@ -105,7 +105,7 @@ class Order(models.Model):
     employee = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     product_title = models.CharField(max_length=255)
     product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
-    number = models.IntegerField(null=True, blank= True, unique=True help_text="Human-readable order number")
+    number = models.IntegerField(null=True, blank= True, unique=True, help_text="Human-readable order number")
     product_price = models.PositiveIntegerField(default=0)
     quantity = models.PositiveIntegerField(default=0)
     amount = models.PositiveIntegerField(default=0)
