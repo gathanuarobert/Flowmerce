@@ -51,3 +51,4 @@ def order_confirmation_email(order):
         [recipient],
         fail_silently=False,
     )
+    
