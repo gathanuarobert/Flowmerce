@@ -1,6 +1,7 @@
 from django.contrib.auth.models import UserManager, AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+import uuid
 from django.utils.text import slugify
 
 class CustomUserManager(UserManager):
@@ -99,10 +100,11 @@ class Tag(models.Model):
 
 
 class Order(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     employee = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     product_title = models.CharField(max_length=255)
     product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
-    number = models.IntegerField(unique=True)
+    number = models.IntegerField(null=True, blank= True, unique=True)
     product_price = models.PositiveIntegerField(default=0)
     quantity = models.PositiveIntegerField(default=0)
     amount = models.PositiveIntegerField(default=0)
@@ -130,6 +132,10 @@ class Order(models.Model):
     def save (self, *args, **kwargs):
         if self.product and self.quantity:
            self.amount = self.quantity * self.product.price 
+        if not self.number:
+            last_order = Order.objects.order_by('-number').first() 
+            self.number = (last_order.number + 1) if last_order and last_order.number else 1000
+              
         super().save(*args, **kwargs)   
                
     
