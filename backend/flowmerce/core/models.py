@@ -100,7 +100,6 @@ class Tag(models.Model):
 
 class Order(models.Model):
     employee = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
-    employee_email = models.EmailField()
     product_title = models.CharField(max_length=255)
     product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
     number = models.IntegerField(unique=True)
@@ -123,6 +122,10 @@ class Order(models.Model):
         
     def __str__(self):
         return f'Order {self.id} by {self.employee.email}'
+    
+    @property
+    def employee_email(self):
+        return self.employee.email
     
     def save (self, *args, **kwargs):
         if self.product and self.quantity:
