@@ -100,8 +100,6 @@ class Tag(models.Model):
 
 
 class Order(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     employee = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     product_title = models.CharField(max_length=255)
     product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
