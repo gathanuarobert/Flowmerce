@@ -14,3 +14,11 @@ def create_new_product(sender, instance, created, **kwargs):
         print(f'New product added: {instance.title}')
         instance.save()        
 
+@receiver(post_save, sender=Order)
+def product_stock_update(sender, instance, created, **kwargs):
+    if created:
+        product = instance.product
+        product.stock -= instance.quantity
+        if product.stock <= 0:
+            product.status = 'out of stock'
+        product.save()    
