@@ -1,4 +1,5 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
+from django.utils.text import slugify
 from django.dispatch import receiver
 from .models import User, Order, Product
 
@@ -21,4 +22,9 @@ def product_stock_update(sender, instance, created, **kwargs):
         product.stock -= instance.quantity
         if product.stock <= 0:
             product.status = 'out of stock'
-        product.save()    
+        product.save()  
+
+@receiver(pre_save, sender=Product)
+def set_product_slug(sender, instance, **kwargs):
+    if not instance.slug:
+        instance.slug = slugify(instance.title)
