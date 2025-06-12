@@ -107,7 +107,11 @@ class Order(models.Model):
     product_price = models.PositiveIntegerField(default=0)
     quantity = models.PositiveIntegerField(default=0)
     amount = models.PositiveIntegerField(default=0)
-    status = models.CharField(max_length=255,choices=[('pending', 'Pending'), ('completed', 'Completed'), ('cancelled', 'Cancelled')])
+    PENDING = 'Pending'
+    COMPLETED = 'Completed'
+    CANCELLED = 'Cancelled'
+    STATUS_CHOICES = [(PENDING, 'Pending'), (COMPLETED, 'Completed'), (CANCELLED, 'Cancelled')]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=COMPLETED,)
     order_date = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
