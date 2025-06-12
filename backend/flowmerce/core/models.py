@@ -101,6 +101,7 @@ class Tag(models.Model):
 
 class Order(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     employee = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     product_title = models.CharField(max_length=255)
     product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
@@ -135,7 +136,7 @@ class Order(models.Model):
         if not self.number:
             last_order = Order.objects.order_by('-number').first() 
             self.number = (last_order.number + 1) if last_order and last_order.number else 1000
-              
+
         super().save(*args, **kwargs)   
                
     
