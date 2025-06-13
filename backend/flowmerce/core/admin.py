@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import User, Product, Category, Tag, Order, OrderItem
+from .models import User, Product, Category, Tag, Order, OrderItem, Profile
 
 admin.site.register(User)
 
@@ -21,7 +21,11 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('order_date', 'status', 'product__title')
     search_fields = ('product__title', 'order_date', 'employee')
 
-admin.site.register(OrderItem)    
+admin.site.register(OrderItem) 
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'profile_picture')
 
 admin.site.site_header = 'Flowmerce Admin'
 admin.site.site_title = 'Flowmerce Admin Portal'
