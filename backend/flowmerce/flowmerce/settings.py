@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'core',  # Custom app for user management
     'rest_framework',  # Django REST Framework for API development
     'rest_framework.authtoken',  # Token authentication for DRF
+    'rest_framework_simplejwt',
 ]
 
 AUTH_USER_MODEL = 'core.User'
