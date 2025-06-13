@@ -151,3 +151,10 @@ class OrderItem(models.Model):
     def total_price(self):
         return self.quantity * self.price        
     
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    profile_picture = models.ImageField(upload_to='profiles/', blank=True)
+
+    def __str__(self):
+        return f"{self.user.email}'s profile"
