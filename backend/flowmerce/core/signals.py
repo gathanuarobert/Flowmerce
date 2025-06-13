@@ -3,13 +3,12 @@ from django.utils.text import slugify
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Order, Product
+from .models import User, Order, Product, Profile
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        print(f'Profile created for user:{instance.email}')
-        instance.profile.save()
+        Profile.objects.create(user=instance)
 
 @receiver(post_save, sender=Product)
 def create_new_product(sender, instance, created, **kwargs):
