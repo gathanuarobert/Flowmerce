@@ -1,7 +1,6 @@
 from django.contrib.auth.models import UserManager, AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
-import uuid
 from django.utils.text import slugify
 
 class CustomUserManager(UserManager):
