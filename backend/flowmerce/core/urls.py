@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserListView,
     UserRegisterView,
-    UserLoginAPIVIEW,
+    UserLoginAPIView,
     UserLogoutView,
     ProductListView,
     ProductCreateView,
@@ -18,7 +18,7 @@ route = DefaultRouter()
 urlpatterns = [
     path('users/', UserListView.as_view(), name='user-list'),
     path('register/', UserRegisterView.as_view(), name='user-register'),
-    path('login/', UserLoginAPIVIEW.as_view(), name='user-login'),
+    path('login/', UserLoginAPIView.as_view(), name='user-login'),
     path('logout/', UserLogoutView.as_view(), name='user-logout'),
     path('products/', ProductListView.as_view(), name='product-list'),
     path('products/create/', ProductCreateView.as_view(), name='product-create'),
