@@ -18,6 +18,7 @@ import pymysql
 pymysql.version_info = (1, 4, 8, 'final', 0)
 pymysql.install_as_MySQLdb()
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -55,8 +56,14 @@ AUTH_USER_MODEL = 'core.User'
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default backend
-    'path.to.your.CustomAuthBackend',  # If you have a custom one
+    # 'path.to.your.CustomAuthBackend',  # If you have a custom one
 ]
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # 1 hour instead of 5 mins
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
