@@ -34,7 +34,7 @@ class UserRegisterView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
     
-class UserLoginAPIVIEW(APIView):
+class UserLoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
