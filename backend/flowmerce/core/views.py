@@ -42,18 +42,38 @@ class UserLoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        email = request.data.get('email')    
-        password = request.data.get('password')
-        user = authenticate(request, email=email, password=password)
+        try:
+            email = request.data.get('email')    
+            password = request.data.get('password')
+            
+            if not email or not password:
+                return Response(
+                    {'error': 'Email and password required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        if user:
+            user = authenticate(request, email=email, password=password)
+            
+            if not user:
+                return Response(
+                    {'error': 'Invalid credentials'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
             refresh = RefreshToken.for_user(user)
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'user': UserSerializer(user).data
             })
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        except Exception as e:
+            print(f"Login error: {str(e)}")  # Check terminal
+            return Response(
+                {'error': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     
 class UserLogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
