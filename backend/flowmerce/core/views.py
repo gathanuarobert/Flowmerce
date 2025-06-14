@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import generics
+import logging
+logger = logging.getLogger(__name__)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .models import User, Product, Order, OrderItem
@@ -23,6 +25,8 @@ class UserRegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
