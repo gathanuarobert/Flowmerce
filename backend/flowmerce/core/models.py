@@ -152,8 +152,17 @@ class OrderItem(models.Model):
     
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    id = models.BigAutoField(primary_key=True)  # Explicit auto-increment
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='profile',
+        db_column='user_id'  # Explicit column name
+    )
     profile_picture = models.ImageField(upload_to='profiles/', blank=True)
+
+    class Meta:
+        db_table = 'profiles'  # Explicit table name
 
     def __str__(self):
         return f"{self.user.email}'s profile"
