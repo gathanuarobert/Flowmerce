@@ -89,8 +89,15 @@ const Products = () => {
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-
   const paginate = (pageNumber) => setCurrentPage(pageNumber)
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`api/products/${id}/`);
+      setProducts(products.filter(product => product.id !== id));
+    } catch (error) {
+      console.error('Delete error:', error);
+    }
+  };
 
   return (
     <div className="p-6 bg-white rounded-xl">
@@ -156,7 +163,10 @@ const Products = () => {
               <td>${prod.price.toFixed(2)}</td>
               <td className="flex gap-2">
                 <Pencil className="w-4 h-4 text-blue-600 cursor-pointer" />
-                <Trash2 className="w-4 h-4 text-red-600 cursor-pointer" />
+                <Trash2
+                className="w-4 h-4 text-red-600 cursor-pointer"
+                onClick={() => handleDelete(prod.id)}
+                 />
               </td>
             </tr>
           ))}
