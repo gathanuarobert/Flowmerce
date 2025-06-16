@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pencil, Trash2 } from "lucide-react";
 import api from '../utils/api';
 
@@ -41,6 +41,24 @@ const statusColors = {
 };
 
 const Products = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState([]);
+  const [error, setError] = useState(null);
+
+ useEffect(() => {
+    const getProducts = async () => {
+      try {
+        const data = await fetchProducts();
+        setProducts(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getProducts();
+  }, []);
+
   return (
     <div className="p-6 bg-white rounded-xl">
       <div className="flex justify-between items-center mb-4">
