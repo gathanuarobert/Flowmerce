@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pencil, Trash2 } from "lucide-react";
+import api from '../utils/api';
 
 const products = [
   {
@@ -22,6 +23,16 @@ const products = [
   },
   // Add more...
 ];
+
+const fetchProducts = async () => {
+  try {
+    const response = await api.get('api/products/');
+    return response.data
+  } catch (error) {
+    console.error('API error:', error);
+    throw error
+  }
+}
 
 const statusColors = {
   "In Stock": "text-green-600 bg-green-100",
