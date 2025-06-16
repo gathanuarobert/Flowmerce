@@ -47,7 +47,8 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc'})
   const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(20)
+  const [productsPerPage] = useState(20);
+  const [editingProduct, setEditingProduct] = useState(null);
 
  useEffect(() => {
     const getProducts = async () => {
@@ -118,6 +119,30 @@ const Products = () => {
         </div>
       </div>
 
+      {editingProduct && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center'>
+          <div className='bg-white p-6 rounded-lg w-1/2'>
+          <h2 className='text-xl mb-4'>
+            Edit Product
+          </h2>
+          <div className='flex justify-end gap-2 mt-4'>
+            <button className='px-4 py-2 bg-gray-300 rounded'
+            onClick={() => setEditingProduct(null)}
+            >
+              Cancel
+            </button>
+            <button className='px-4 py-2 bg-[#ff5c00] text-white rounded'
+            onClick={
+              //add update logic here {handleUpdate}
+              setEditingProduct(null)}
+            >
+              Save
+            </button>
+          </div>
+          </div>
+        </div>
+      )}
+
       <table className="w-full text-left">
         <thead>
           <tr className="bg-gray-100/30">
@@ -162,7 +187,10 @@ const Products = () => {
               <td>{prod.stock}</td>
               <td>${prod.price.toFixed(2)}</td>
               <td className="flex gap-2">
-                <Pencil className="w-4 h-4 text-blue-600 cursor-pointer" />
+                <Pencil
+                className="w-4 h-4 text-blue-600 cursor-pointer"
+                onClick={() => setEditingProduct(prod)}
+                />
                 <Trash2
                 className="w-4 h-4 text-red-600 cursor-pointer"
                 onClick={() => handleDelete(prod.id)}
