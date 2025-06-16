@@ -49,6 +49,7 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
  useEffect(() => {
     const getProducts = async () => {
@@ -113,7 +114,9 @@ const Products = () => {
         <div className="flex gap-2">
           <button className="px-4 py-2 rounded-md shadow">Sort</button>
           <button className="px-4 py-2 rounded-md shadow">Filter</button>
-          <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-md cursor-pointer">
+          <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-md cursor-pointer"
+          onClick={() => setShowAddModal(true)}
+          >
             + Add Product
           </button>
         </div>
@@ -142,6 +145,30 @@ const Products = () => {
           </div>
         </div>
       )}
+
+      {showAddModal && (
+        <div className='bg-white p-6 rounded-lg w-1/2'>
+          <h2 className='text-xl mb-4'>Add New product</h2>
+          {/* Form fields go here */}
+          <div className='flex justify-end gap-2 mt-4'>
+            <button
+            className='px-4 py-2 bg-gray-300 rounded'
+            onClick={() => setShowAddModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+            className='px-4 py-2 bg-[#ff5c00] text-white rounded'
+            onClick={() => {
+                  // Implement add logic here
+                  setShowAddModal(false);
+                }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      )};
 
       <table className="w-full text-left">
         <thead>
