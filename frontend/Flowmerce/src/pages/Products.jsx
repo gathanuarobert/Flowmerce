@@ -2,27 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pencil, Trash2 } from "lucide-react";
 import api from '../utils/api';
 
-const products = [
-  {
-    id: 1,
-    image: "https://i.pinimg.com/736x/74/22/e3/7422e3d6bd8fd16026db52a10de2cfd0.jpg",
-    name: "Mens T-shirt",
-    category: "Clothes",
-    status: "Out of Stock",
-    stock: 449,
-    price: 172.0,
-  },
-  {
-    id: 2,
-    image: "https://i.pinimg.com/736x/74/52/c3/7452c3eaf206fc15e95e3530359b8489.jpg",
-    name: "Leather Hand Bag",
-    category: "Bag",
-    status: "In Stock",
-    stock: 223,
-    price: 112.0,
-  },
-  // Add more...
-];
+
 
 const fetchProducts = async () => {
   try {
@@ -56,8 +36,8 @@ const Products = () => {
       try {
         const data = await fetchProducts();
         setProducts(data);
-      } catch (err) {
-        setError(err.message);
+      } catch (error) {
+        setError(error.message);
       } finally {
         setLoading(false);
       }
@@ -100,6 +80,9 @@ const Products = () => {
       console.error('Delete error:', error);
     }
   };
+
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
     <div className="p-6 bg-white rounded-xl">
