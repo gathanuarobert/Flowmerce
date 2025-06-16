@@ -44,6 +44,8 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState([]);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc'})
 
  useEffect(() => {
     const getProducts = async () => {
@@ -59,12 +61,19 @@ const Products = () => {
     getProducts();
   }, []);
 
+  const filteredProducts = products.filter(product => 
+    product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-6 bg-white rounded-xl">
       <div className="flex justify-between items-center mb-4">
         <input
           type="text"
           placeholder="Search..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="px-4 py-2 bg-[#f49cac]/30 rounded-md w-1/3 focus:outline-0 focus:ring-2 focus:ring-amber-600"
         />
         <div className="flex gap-2">
