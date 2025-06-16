@@ -66,6 +66,24 @@ const Products = () => {
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction})
+  };
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (a[sortConfig] > b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0
+  })
+
   return (
     <div className="p-6 bg-white rounded-xl">
       <div className="flex justify-between items-center mb-4">
@@ -88,11 +106,26 @@ const Products = () => {
       <table className="w-full text-left">
         <thead>
           <tr className="bg-gray-100/30">
-            <th className="py-2">Product</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>Stock</th>
-            <th>Price</th>
+            <th
+            className="py-2 cursor-pointer"
+            onClick={() => requestSort('title')}
+            >Product</th>
+            <th
+            className="py-2 cursor-pointer"
+            onClick={() => requestSort('category')}
+            >Category</th>
+            <th
+            className="py-2 cursor-pointer"
+            onClick={() => requestSort('status')}
+            >Status</th>
+            <th
+            className="py-2 cursor-pointer"
+            onClick={() => requestSort('stock')}
+            >Stock</th>
+            <th
+            className="py-2 cursor-pointer"
+            onClick={() => requestSort('price')}
+            >Price</th>
             <th>Action</th>
           </tr>
         </thead>
