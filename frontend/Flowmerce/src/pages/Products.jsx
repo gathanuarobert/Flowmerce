@@ -46,6 +46,8 @@ const Products = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc'})
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(20)
 
  useEffect(() => {
     const getProducts = async () => {
@@ -82,7 +84,13 @@ const Products = () => {
       return sortConfig.direction === 'asc' ? 1 : -1;
     }
     return 0
-  })
+  });
+
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber)
 
   return (
     <div className="p-6 bg-white rounded-xl">
@@ -154,6 +162,20 @@ const Products = () => {
           ))}
         </tbody>
       </table>
+
+      {sortedProducts.length > productsPerPage && (
+        <div className='flex justify-center mt-4'>
+          {[...Array(Math.ceil(sortedProducts.length / productsPerPage)).keys()].map(number => (
+            <button
+            key={number + 1}
+            onClick={() => paginate(number + 1)}
+            className={`mx-1 px-3 py-1 rounded ${currentPage === number + 1 ? 'bg-[#ff5c00] text-white' : 'bg-gray-200'}`}
+            >
+              {number + 1}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
