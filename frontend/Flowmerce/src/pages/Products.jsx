@@ -6,7 +6,7 @@ import api from '../utils/api';
 
 const fetchProducts = async () => {
   try {
-    const response = await api.get('products/');
+    const response = await api.get('/products/');
     return response.data
   } catch (error) {
     console.error('API error:', error);
@@ -23,7 +23,7 @@ const statusColors = {
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState([]);
-  const [error, setError] = useState(null);
+  const [setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc'})
   const [currentPage, setCurrentPage] = useState(1);
