@@ -6,7 +6,7 @@ import api from '../utils/api';
 
 const fetchProducts = async () => {
   try {
-    const response = await api.get('api/products/');
+    const response = await api.get('products/');
     return response.data
   } catch (error) {
     console.error('API error:', error);
@@ -81,8 +81,8 @@ const Products = () => {
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+  if (loading) return <div className="p-6">Loading...</div>
+  // if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
     <div className="p-6 bg-white rounded-xl">
@@ -151,7 +151,7 @@ const Products = () => {
             </button>
           </div>
         </div>
-      )};
+      )}
 
       <table className="w-full text-left">
         <thead>
@@ -180,7 +180,7 @@ const Products = () => {
           </tr>
         </thead>
         <tbody>
-          {products.map((prod) => (
+          {currentProducts.map((prod) => (
             <tr key={prod.id} className="hover:bg-gray-50">
               <td className="py-3 flex items-center gap-3">
                 <img src={prod.image} alt={prod.name} className="w-10 h-10 rounded" />
