@@ -43,7 +43,7 @@ const Products = () => {
       }
     };
     getProducts();
-  }, []);
+  }, [setError]);
 
   const filteredProducts = products.filter(product => 
     product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
