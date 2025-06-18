@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Products from './pages/Products'
 import Layout from './components/Layout'
@@ -8,7 +8,20 @@ import Orders from './pages/Orders'
 import Analytics from './pages/Analytics'
 import Reports from './pages/Reports'
 
+const useAuthCheck = () => {
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = localStorage.getItem('access_token')
+      if (!token && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    };
+    checkToken();
+  }, [])
+}
+
 const App = () => {
+  useAuthCheck();
   return (
     <BrowserRouter>
       <Routes>
