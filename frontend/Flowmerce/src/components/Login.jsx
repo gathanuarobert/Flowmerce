@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaLock, FaUser, FaArrowRight } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   return (
@@ -16,7 +17,7 @@ const Login = () => {
           <input
             type="text"
             placeholder="Username"
-            className="w-full pl-10 pr-4 py-3 rounded-4xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 rounded-4xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
           />
         </div>
         
@@ -28,7 +29,7 @@ const Login = () => {
           <input
             type="password"
             placeholder="Password"
-            className="w-full pl-10 pr-4 py-3 rounded-4xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 rounded-4xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
           />
         </div>
         
@@ -59,9 +60,12 @@ const Login = () => {
         <div className="text-center text-gray-600 text-sm">
           <p>
             Don't have an account?{' '}
-            <a href="#" className="text-indigo-600 hover:text-indigo-800 font-medium hover:underline">
+            <Link 
+              to="/register" 
+              className="text-indigo-600 hover:text-indigo-800 font-medium hover:underline transition-colors"
+            >
               Register
-            </a>
+            </Link>
           </p>
         </div>
       </form>
