@@ -1,23 +1,70 @@
 import React from 'react';
-import { FaLock, FaUser, FaArrowRight } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { FaLock, FaArrowRight, FaSpinner, FaEnvelope } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import { toast } from 'react-toastify';
 
 const Login = () => {
+  const [formData, setFormData] = useState({
+    email: "",  // Changed from username to email
+    password: "",
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await api.post('/login/', {
+        email: formData.email,  // Changed to match backend expectation
+        password: formData.password
+      });
+      
+      localStorage.setItem("access_token", response.data.access);
+      localStorage.setItem("refresh_token", response.data.refresh);
+      api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+      
+      toast.success('Login successful!');
+      navigate('/products');
+    } catch (error) {
+      const errorMessage = error.response?.data?.error ||  // Matches your Django error key
+                         error.response?.data?.message || 
+                         'Login failed. Please check your credentials.';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   return (
     <div className="h-full flex items-center justify-center mt-5">
-      <form className="w-full max-w-md bg-white rounded-xl shadow p-8 space-y-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-md bg-white rounded-xl shadow p-8 space-y-4">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">Login</h1>
         
-        
-        {/* Username Field */}
+        {/* Email Field - Updated to use email */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FaUser className="text-gray-400" />
+            <FaEnvelope className="text-gray-400" />
           </div>
           <input
-            type="text"
-            placeholder="Username"
+            name="email"
+            type="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
             className="w-full pl-10 pr-4 py-3 rounded-4xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            required
           />
         </div>
         
@@ -27,9 +74,13 @@ const Login = () => {
             <FaLock className="text-gray-400" />
           </div>
           <input
+            name="password"
             type="password"
             placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
             className="w-full pl-10 pr-4 py-3 rounded-4xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            required
           />
         </div>
         
@@ -42,18 +93,25 @@ const Login = () => {
             />
             <span>Remember me</span>
           </label>
-          <a href="#" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
+          <Link to="/forgot-password" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
             Forgot password?
-          </a>
+          </Link>
         </div>
         
         {/* Login Button */}
         <button
           type="submit"
+          disabled={isLoading}
           className="w-full bg-[#ff5c00] text-white font-medium py-3 px-4 rounded-4xl transition duration-200 flex items-center justify-center space-x-2"
         >
-          <span>Login</span>
-          <FaArrowRight className="text-sm" />
+          {isLoading ? (
+            <FaSpinner className="animate-spin" />
+          ) : (
+            <>
+              <span>Login</span>
+              <FaArrowRight className="text-sm" />
+            </>
+          )}
         </button>
         
         {/* Sign Up Link */}
