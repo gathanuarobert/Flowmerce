@@ -2,87 +2,82 @@ import React, { useEffect, useState } from 'react';
 import { Pencil, Trash2 } from "lucide-react";
 import api from '../utils/api';
 
-
-
-const fetchProducts = async () => {
-  try {
-    const response = await api.get('/products/');
-    return response.data
-  } catch (error) {
-    console.error('API error:', error);
-    throw error
-  }
-}
-
 const statusColors = {
-  "In Stock": "text-green-600 bg-green-100",
-  "Out of Stock": "text-red-600 bg-red-100",
-  "Coming Soon": "text-yellow-600 bg-yellow-100",
+  "available": "text-green-600 bg-green-100",
+  "out_of_stock": "text-red-600 bg-red-100",
+  "coming_soon": "text-yellow-600 bg-yellow-100",
 };
 
 const Products = () => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState([]);
-  const [setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc'})
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
- useEffect(() => {
-    const getProducts = async () => {
+  useEffect(() => {
+    const fetchProducts = async () => {
       try {
-        const data = await fetchProducts();
+        const response = await api.get('/products/');
+        // Handle different API response structures
+        const data = Array.isArray(response.data) 
+          ? response.data 
+          : response.data?.results || response.data?.data || [];
         setProducts(data);
       } catch (error) {
         setError(error.message);
+        console.error('API error:', error);
       } finally {
         setLoading(false);
       }
     };
-    getProducts();
-  }, [setError]);
 
-  const filteredProducts = products.filter(product => 
-    product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    fetchProducts();
+  }, []);
+
+  const filteredProducts = (products || []).filter(product => 
+    product?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (product?.category?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const requestSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc'
+      direction = 'desc';
     }
-    setSortConfig({ key, direction})
+    setSortConfig({ key, direction });
   };
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (a[sortConfig.key] < b[sortConfig.key]) {
       return sortConfig.direction === 'asc' ? -1 : 1;
     }
-    if (a[sortConfig] > b[sortConfig.key]) {
+    if (a[sortConfig.key] > b[sortConfig.key]) {
       return sortConfig.direction === 'asc' ? 1 : -1;
     }
-    return 0
+    return 0;
   });
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-  const paginate = (pageNumber) => setCurrentPage(pageNumber)
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   const handleDelete = async (id) => {
     try {
-      await api.delete(`api/products/${id}/`);
+      await api.delete(`/api/products/${id}/`);
       setProducts(products.filter(product => product.id !== id));
     } catch (error) {
       console.error('Delete error:', error);
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>
-  // if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
     <div className="p-6 bg-white rounded-xl">
@@ -97,8 +92,9 @@ const Products = () => {
         <div className="flex gap-2">
           <button className="px-4 py-2 rounded-md shadow">Sort</button>
           <button className="px-4 py-2 rounded-md shadow">Filter</button>
-          <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-md cursor-pointer"
-          onClick={() => setShowAddModal(true)}
+          <button 
+            className="bg-[#ff5c00] text-white px-4 py-2 rounded-md cursor-pointer"
+            onClick={() => setShowAddModal(true)}
           >
             + Add Product
           </button>
@@ -108,47 +104,43 @@ const Products = () => {
       {editingProduct && (
         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center'>
           <div className='bg-white p-6 rounded-lg w-1/2'>
-          <h2 className='text-xl mb-4'>
-            Edit Product
-          </h2>
-          <div className='flex justify-end gap-2 mt-4'>
-            <button className='px-4 py-2 bg-gray-300 rounded'
-            onClick={() => setEditingProduct(null)}
-            >
-              Cancel
-            </button>
-            <button className='px-4 py-2 bg-[#ff5c00] text-white rounded'
-            onClick={
-              //add update logic here {handleUpdate}
-              setEditingProduct(null)}
-            >
-              Save
-            </button>
-          </div>
+            <h2 className='text-xl mb-4'>Edit Product</h2>
+            <div className='flex justify-end gap-2 mt-4'>
+              <button 
+                className='px-4 py-2 bg-gray-300 rounded'
+                onClick={() => setEditingProduct(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className='px-4 py-2 bg-[#ff5c00] text-white rounded'
+                onClick={() => setEditingProduct(null)}
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {showAddModal && (
-        <div className='bg-white p-6 rounded-lg w-1/2'>
-          <h2 className='text-xl mb-4'>Add New product</h2>
-          {/* Form fields go here */}
-          <div className='flex justify-end gap-2 mt-4'>
-            <button
-            className='px-4 py-2 bg-gray-300 rounded'
-            onClick={() => setShowAddModal(false)}
-            >
-              Cancel
-            </button>
-            <button
-            className='px-4 py-2 bg-[#ff5c00] text-white rounded'
-            onClick={() => {
-                  // Implement add logic here
-                  setShowAddModal(false);
-                }}
-            >
-              Add
-            </button>
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center'>
+          <div className='bg-white p-6 rounded-lg w-1/2'>
+            <h2 className='text-xl mb-4'>Add New Product</h2>
+            <div className='flex justify-end gap-2 mt-4'>
+              <button
+                className='px-4 py-2 bg-gray-300 rounded'
+                onClick={() => setShowAddModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className='px-4 py-2 bg-[#ff5c00] text-white rounded'
+                onClick={() => setShowAddModal(false)}
+              >
+                Add
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -156,26 +148,11 @@ const Products = () => {
       <table className="w-full text-left">
         <thead>
           <tr className="bg-gray-100/30">
-            <th
-            className="py-2 cursor-pointer"
-            onClick={() => requestSort('title')}
-            >Product</th>
-            <th
-            className="py-2 cursor-pointer"
-            onClick={() => requestSort('category')}
-            >Category</th>
-            <th
-            className="py-2 cursor-pointer"
-            onClick={() => requestSort('status')}
-            >Status</th>
-            <th
-            className="py-2 cursor-pointer"
-            onClick={() => requestSort('stock')}
-            >Stock</th>
-            <th
-            className="py-2 cursor-pointer"
-            onClick={() => requestSort('price')}
-            >Price</th>
+            <th className="py-2 cursor-pointer" onClick={() => requestSort('title')}>Product</th>
+            <th className="py-2 cursor-pointer" onClick={() => requestSort('category')}>Category</th>
+            <th className="py-2 cursor-pointer" onClick={() => requestSort('status')}>Status</th>
+            <th className="py-2 cursor-pointer" onClick={() => requestSort('stock')}>Stock</th>
+            <th className="py-2 cursor-pointer" onClick={() => requestSort('price')}>Price</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -183,28 +160,30 @@ const Products = () => {
           {currentProducts.map((prod) => (
             <tr key={prod.id} className="hover:bg-gray-50">
               <td className="py-3 flex items-center gap-3">
-                <img src={prod.image} alt={prod.name} className="w-10 h-10 rounded" />
-                {prod.name}
+                {prod.image && (
+                  <img src={prod.image} alt={prod.title} className="w-10 h-10 rounded" />
+                )}
+                {prod.title}
               </td>
-              <td>{prod.category}</td>
+              <td>{prod.category?.title || 'Uncategorized'}</td>
               <td>
-                <span
-                  className={`px-2 py-1 rounded-full text-sm ${statusColors[prod.status]}`}
-                >
-                  {prod.status}
+                <span className={`px-2 py-1 rounded-full text-sm ${statusColors[prod.status] || 'bg-gray-100'}`}>
+                  {prod.status === 'available' ? 'In Stock' : 
+                   prod.status === 'out_of_stock' ? 'Out of Stock' : 
+                   'Coming Soon'}
                 </span>
               </td>
               <td>{prod.stock}</td>
-              <td>${prod.price.toFixed(2)}</td>
+              <td>${prod.price?.toFixed(2) || '0.00'}</td>
               <td className="flex gap-2">
                 <Pencil
-                className="w-4 h-4 text-blue-600 cursor-pointer"
-                onClick={() => setEditingProduct(prod)}
+                  className="w-4 h-4 text-blue-600 cursor-pointer"
+                  onClick={() => setEditingProduct(prod)}
                 />
                 <Trash2
-                className="w-4 h-4 text-red-600 cursor-pointer"
-                onClick={() => handleDelete(prod.id)}
-                 />
+                  className="w-4 h-4 text-red-600 cursor-pointer"
+                  onClick={() => handleDelete(prod.id)}
+                />
               </td>
             </tr>
           ))}
@@ -215,9 +194,9 @@ const Products = () => {
         <div className='flex justify-center mt-4'>
           {[...Array(Math.ceil(sortedProducts.length / productsPerPage)).keys()].map(number => (
             <button
-            key={number + 1}
-            onClick={() => paginate(number + 1)}
-            className={`mx-1 px-3 py-1 rounded ${currentPage === number + 1 ? 'bg-[#ff5c00] text-white' : 'bg-gray-200'}`}
+              key={number + 1}
+              onClick={() => paginate(number + 1)}
+              className={`mx-1 px-3 py-1 rounded ${currentPage === number + 1 ? 'bg-[#ff5c00] text-white' : 'bg-gray-200'}`}
             >
               {number + 1}
             </button>
