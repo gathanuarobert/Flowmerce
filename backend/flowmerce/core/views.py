@@ -52,7 +52,7 @@ class UserLoginAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            user = authenticate(request, email=email, password=password)
+            user = authenticate(request, email=email, password=password)  # <-- Changed `name` to `email`
             
             if not user:
                 return Response(
@@ -68,7 +68,7 @@ class UserLoginAPIView(APIView):
             })
             
         except Exception as e:
-            print(f"Login error: {str(e)}")  # Check terminal
+            logger.error(f"Login error: {str(e)}")  # Use logger instead of print
             return Response(
                 {'error': 'Internal server error'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
