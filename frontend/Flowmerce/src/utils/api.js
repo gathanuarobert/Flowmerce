@@ -1,7 +1,3 @@
-// fetch("http://localhost:8000/api")
-//   .then(response => console.log(response))
-//   .catch((error) => console.error(error));
-
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -12,14 +8,14 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true, // For session/cookie auth if needed
+  withCredentials: true,
 });
 
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
-    const csrfToken = getCookie('csrftoken'); // Implement this helper
+    const csrfToken = getCookie('csrftoken');
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -34,37 +30,19 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor
+// Simplified Response Interceptor
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Token Refresh Logic
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        const response = await axios.post(
-          `${api.defaults.baseURL}auth/refresh/`, 
-          { refresh: refreshToken }
-        );
-
-        localStorage.setItem('access_token', response.data.access);
-        if (response.data.refresh) {
-          localStorage.setItem('refresh_token', response.data.refresh);
-        }
-
-        originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
-        return api(originalRequest);
-      } catch (refreshError) {
-        handleLogout();
-        return Promise.reject(refreshError);
-      }
+    // Handle 401 errors (unauthorized)
+    if (error.response?.status === 401) {
+      handleLogout();
+      return Promise.reject(error);
     }
 
-    // Error Handling
+    // Handle other errors
     handleError(error);
     return Promise.reject(error);
   }
@@ -86,29 +64,23 @@ function handleError(error) {
 
   const { status, data } = error.response;
   
-  switch (status) {
-    case 400:
-      toast.error(data.message || 'Invalid request');
-      break;
-    case 403:
-      if (data.code === 'token_not_valid') {
-        handleLogout();
-      } else {
-        toast.error(data.message || 'Forbidden');
-      }
-      break;
-    case 404:
-      toast.error(data.message || 'Resource not found');
-      break;
-    case 500:
-      toast.error(data.message || 'Server error');
-      break;
-    default:
-      toast.error(data?.message || 'An error occurred');
+  // Match your Django error response format
+  const errorMessage = data.error || data.detail || data.message || 'An error occurred';
+  
+  if (status === 400) {
+    toast.error(errorMessage);
+  } else if (status === 403) {
+    toast.error(errorMessage || 'Forbidden');
+  } else if (status === 404) {
+    toast.error(errorMessage || 'Resource not found');
+  } else if (status >= 500) {
+    toast.error(errorMessage || 'Server error');
+  } else {
+    toast.error(errorMessage);
   }
 }
 
-// CSRF Cookie Helper (for Django)
+// CSRF Cookie Helper
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
