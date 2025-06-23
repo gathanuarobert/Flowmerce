@@ -5,8 +5,7 @@ import api from '../utils/api';
 const statusColors = {
   "Active": "bg-green-100 text-green-600",
   "Inactive": "bg-gray-100 text-gray-500",
-  "Banned": "bg-red-100 text-red-600",
-  "Pending": "bg-yellow-100 text-yellow-600"
+  "Banned": "bg-red-100 text-red-600"
 };
 
 const Users = () => {
@@ -18,26 +17,45 @@ const Users = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 10;
 
-  // Fetch users from API with enhanced error handling
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        setError(null);
         const response = await api.get('/users/');
         
-        // Validate API response structure
-        if (!response || !response.data) {
-          throw new Error('Invalid API response structure');
+        // Handle different response formats
+        let usersData = [];
+        
+        if (Array.isArray(response.data)) {
+          usersData = response.data;
+        } else if (response.data && Array.isArray(response.data.results)) {
+          // Handle paginated response (common in DRF)
+          usersData = response.data.results;
+        } else if (response.data && typeof response.data === 'object') {
+          // Handle single user or object response
+          usersData = [response.data];
+        } else {
+          throw new Error('Unexpected API response format');
         }
+
+        // Transform user data
+        const userData = usersData.map(user => ({
+          id: user.id || user.pk, // Handle both id and pk
+          name: user.name || user.username || user.email.split('@')[0],
+          email: user.email || 'No email',
+          date: user.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'Unknown',
+          type: user.is_staff ? 'Staff' : 'Normal',
+          status: user.is_active ? 'Active' : 'Inactive',
+          lastActive: user.last_login 
+            ? `${Math.floor((new Date() - new Date(user.last_login)) / (1000 * 60))} min ago`
+            : 'Never'
+        }));
         
-        // Ensure we always have an array
-        const userData = Array.isArray(response.data) ? response.data : [];
         setUsers(userData);
-        
       } catch (err) {
-        setError(err.message || 'Failed to fetch users');
-        setUsers([]); // Reset to empty array on error
+        console.error('Error fetching users:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch users');
+        setUsers([]);
       } finally {
         setLoading(false);
       }
@@ -46,17 +64,14 @@ const Users = () => {
     fetchUsers();
   }, []);
 
-  // Safe data access helper with type conversion
+  // Rest of your component remains the same...
   const getUserValue = (user, key) => {
-    if (!user || typeof user !== 'object') return '';
+    if (!user) return '';
     const value = user[key];
-    return value !== undefined && value !== null ? String(value) : '';
+    return value !== undefined ? String(value) : '';
   };
 
-  // Safe sorting with array validation
   const sortedUsers = React.useMemo(() => {
-    if (!Array.isArray(users)) return [];
-    
     return [...users].sort((a, b) => {
       const aValue = getUserValue(a, sortConfig.key);
       const bValue = getUserValue(b, sortConfig.key);
@@ -71,35 +86,19 @@ const Users = () => {
     });
   }, [users, sortConfig]);
 
-  // Safe filtering with array validation
   const filteredUsers = React.useMemo(() => {
-    if (!Array.isArray(sortedUsers)) return [];
-    
     const term = searchTerm.toLowerCase();
-    return sortedUsers.filter(user => {
-      try {
-        return (
-          getUserValue(user, 'name').toLowerCase().includes(term) ||
-          getUserValue(user, 'email').toLowerCase().includes(term) ||
-          getUserValue(user, 'status').toLowerCase().includes(term)
-        );
-      } catch {
-        return false;
-      }
-    });
+    return sortedUsers.filter(user => 
+      getUserValue(user, 'name').toLowerCase().includes(term) ||
+      getUserValue(user, 'email').toLowerCase().includes(term)
+    );
   }, [sortedUsers, searchTerm]);
 
-  // Safe pagination with array validation
   const { currentUsers, totalPages } = React.useMemo(() => {
-    if (!Array.isArray(filteredUsers)) {
-      return { currentUsers: [], totalPages: 0 };
-    }
-    
     const indexOfLastUser = currentPage * usersPerPage;
     const indexOfFirstUser = indexOfLastUser - usersPerPage;
     const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
     const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-    
     return { currentUsers, totalPages };
   }, [filteredUsers, currentPage, usersPerPage]);
 
@@ -112,13 +111,10 @@ const Users = () => {
 
   const handleBanUser = async (userId) => {
     try {
-      await api.patch(`/api/users/${userId}/`, { status: 'Banned' });
-      setUsers(prevUsers => {
-        if (!Array.isArray(prevUsers)) return [];
-        return prevUsers.map(user => 
-          user.id === userId ? { ...user, status: 'Banned' } : user
-        );
-      });
+      await api.patch(`/api/users/${userId}/`, { is_active: false });
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, status: 'Inactive' } : user
+      ));
     } catch (err) {
       setError('Failed to ban user');
     }
@@ -127,10 +123,7 @@ const Users = () => {
   const handleDeleteUser = async (userId) => {
     try {
       await api.delete(`/api/users/${userId}/`);
-      setUsers(prevUsers => {
-        if (!Array.isArray(prevUsers)) return [];
-        return prevUsers.filter(user => user.id !== userId);
-      });
+      setUsers(users.filter(user => user.id !== userId));
     } catch (err) {
       setError('Failed to delete user');
     }
@@ -151,7 +144,7 @@ const Users = () => {
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full rounded-lg bg-[#F49CAC]/30 focus:ring-amber-600"
+            className="pl-10 pr-4 py-2 w-full bg-[#F49CAC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5c00]"
           />
         </div>
         <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-md shadow">
@@ -163,7 +156,7 @@ const Users = () => {
         <table className="w-full text-left">
           <thead className="bg-gray-100/30">
             <tr>
-              {['name', 'date', 'type', 'followers', 'lastActive', 'status', 'actions'].map((key) => (
+              {['name', 'email', 'date', 'type', 'status', 'lastActive', 'actions'].map((key) => (
                 <th 
                   key={key}
                   className="py-3 px-4 cursor-pointer"
@@ -172,11 +165,11 @@ const Users = () => {
                   <div className="flex items-center">
                     {{
                       name: 'Name',
+                      email: 'Email',
                       date: 'Register Date',
                       type: 'Account Type',
-                      followers: 'Served',
-                      lastActive: 'Last Active',
                       status: 'Status',
+                      lastActive: 'Last Active',
                       actions: 'Actions'
                     }[key]}
                     {key !== 'actions' && sortConfig.key === key && (
@@ -192,22 +185,21 @@ const Users = () => {
           <tbody>
             {currentUsers.length > 0 ? (
               currentUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 border-b">
+                <tr key={user.id} className="hover:bg-gray-50">
                   <td className="py-4 px-4">
-                    <div className="font-medium text-gray-800">{getUserValue(user, 'name')}</div>
-                    <div className="text-sm text-gray-500">{getUserValue(user, 'email')}</div>
+                    <div className="font-medium text-gray-800">{user.name}</div>
                   </td>
-                  <td className="py-4 px-4">{getUserValue(user, 'date')}</td>
-                  <td className="py-4 px-4">{getUserValue(user, 'type')}</td>
-                  <td className="py-4 px-4">{getUserValue(user, 'followers')}</td>
-                  <td className="py-4 px-4">{getUserValue(user, 'lastActive')}</td>
+                  <td className="py-4 px-4">{user.email}</td>
+                  <td className="py-4 px-4">{user.date}</td>
+                  <td className="py-4 px-4">{user.type}</td>
                   <td className="py-4 px-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       statusColors[user.status] || 'bg-gray-100 text-gray-500'
                     }`}>
-                      {getUserValue(user, 'status')}
+                      {user.status}
                     </span>
                   </td>
+                  <td className="py-4 px-4">{user.lastActive}</td>
                   <td className="py-4 px-4 flex gap-3">
                     <Trash2 
                       className="w-4 h-4 text-red-600 cursor-pointer hover:text-red-800" 
