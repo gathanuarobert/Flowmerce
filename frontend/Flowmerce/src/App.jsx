@@ -9,6 +9,7 @@ import Analytics from './pages/Analytics'
 import Reports from './pages/Reports'
 import Login from './components/Login'
 import Register from './components/Register'
+import AddProduct from './components/AddProduct'
 
 const useAuthCheck = () => {
   useEffect(() => {
@@ -36,6 +37,7 @@ const App = () => {
           <Route path='reports' element={<Reports />} />
           <Route path='login' element={<Login />} />
           <Route path='register' element={<Register />} />
+          <Route path='addproducts' element={<AddProduct />} />
         </Route>
       </Routes>
     </BrowserRouter>
