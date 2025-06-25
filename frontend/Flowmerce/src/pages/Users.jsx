@@ -111,7 +111,7 @@ const Users = () => {
 
   const handleBanUser = async (userId) => {
     try {
-      await api.patch(`/api/users/${userId}/`, { is_active: false });
+      await api.patch(`/users/${userId}/`, { is_active: false });
       setUsers(users.map(user => 
         user.id === userId ? { ...user, status: 'Inactive' } : user
       ));
@@ -122,7 +122,7 @@ const Users = () => {
 
   const handleDeleteUser = async (userId) => {
     try {
-      await api.delete(`/api/users/${userId}/`);
+      await api.delete(`/users/${userId}/`);
       setUsers(users.filter(user => user.id !== userId));
     } catch (err) {
       setError('Failed to delete user');
