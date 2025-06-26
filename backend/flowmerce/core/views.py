@@ -1,14 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import generics
 import logging
 logger = logging.getLogger(__name__)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import User, Product, Order, OrderItem
-from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer
+from .models import User, Product, Order, OrderItem, Category, Tag
+from .serializers import UserSerializer, ProductSerializer, OrderSerializer,OrderItemSerializer, CategorySerializer, TagSerializer
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
@@ -122,3 +122,11 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAdminUser | IsOrderOwner]
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer        
