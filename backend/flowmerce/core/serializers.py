@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Product, Order, OrderItem
+from .models import User, Product, Order, OrderItem, Category, Tag
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -54,3 +54,13 @@ class OrderSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'employee': {'write_only': True}
         }
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = '__all__'        
