@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Pencil, Trash2 } from "lucide-react";
 import api from '../utils/api';
 
@@ -17,7 +18,6 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -92,12 +92,11 @@ const Products = () => {
         <div className="flex gap-2">
           <button className="px-4 py-2 rounded-md shadow">Sort</button>
           <button className="px-4 py-2 rounded-md shadow">Filter</button>
-          <button 
-            className="bg-[#ff5c00] text-white px-4 py-2 rounded-md cursor-pointer"
-            onClick={() => setShowAddModal(true)}
-          >
-            + Add Product
-          </button>
+          <Link to='/addproducts' relative="path">
+            <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-md cursor-pointer">
+              + Add Product
+            </button>
+          </Link>
         </div>
       </div>
 
@@ -117,28 +116,6 @@ const Products = () => {
                 onClick={() => setEditingProduct(null)}
               >
                 Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showAddModal && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center'>
-          <div className='bg-white p-6 rounded-lg w-1/2'>
-            <h2 className='text-xl mb-4'>Add New Product</h2>
-            <div className='flex justify-end gap-2 mt-4'>
-              <button
-                className='px-4 py-2 bg-gray-300 rounded'
-                onClick={() => setShowAddModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className='px-4 py-2 bg-[#ff5c00] text-white rounded'
-                onClick={() => setShowAddModal(false)}
-              >
-                Add
               </button>
             </div>
           </div>
