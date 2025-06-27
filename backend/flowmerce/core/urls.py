@@ -13,9 +13,15 @@ from .views import (
     OrderListView,
     OrderDetailView,
     OrderCreateView,
+    CategoryViewSet,
+    TagViewSet
 )
 
 route = DefaultRouter()
+router = DefaultRouter()
+
+router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'tags', TagViewSet, basename='tag')
 
 urlpatterns = [
     path('users/', UserListView.as_view(), name='user-list'),
