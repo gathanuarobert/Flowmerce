@@ -126,7 +126,9 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
-    serializer_class = TagSerializer        
+    serializer_class = TagSerializer  
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]      
