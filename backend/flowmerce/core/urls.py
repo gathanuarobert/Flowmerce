@@ -7,9 +7,7 @@ from .views import (
     UserRegisterView,
     UserLoginAPIView,
     UserLogoutView,
-    ProductListView,
-    ProductCreateView,
-    ProductDetailView,
+    ProductViewSet,
     OrderListView,
     OrderDetailView,
     OrderCreateView,
@@ -19,6 +17,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register(r'products', ProductViewSet)
 router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'tags', TagViewSet, basename='tag')
 
@@ -27,9 +26,6 @@ urlpatterns = [
     path('register/', UserRegisterView.as_view(), name='user-register'),
     path('login/', UserLoginAPIView.as_view(), name='user-login'),
     path('logout/', UserLogoutView.as_view(), name='user-logout'),
-    path('products/', ProductListView.as_view(), name='product-list'),
-    path('products/', ProductCreateView.as_view(), name='product-create'),
-    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
     path('orders/', OrderListView.as_view(), name='order-list'),
     path('orders/create/', OrderCreateView.as_view(), name='order-create'),
     path('orders/<int:pk>/', OrderDetailView.as_view(), name='order-detail'),
