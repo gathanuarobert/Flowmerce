@@ -2,13 +2,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
-from rest_framework import generics
+from rest_framework import parsers, generics
 import logging
 logger = logging.getLogger(__name__)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .models import User, Product, Order, OrderItem, Category, Tag
-from .serializers import UserSerializer, ProductSerializer, OrderSerializer,OrderItemSerializer, CategorySerializer, TagSerializer
+from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer, TagSerializer
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
@@ -52,7 +52,7 @@ class UserLoginAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            user = authenticate(request, email=email, password=password)  # <-- Changed `name` to `email`
+            user = authenticate(request, email=email, password=password)
             
             if not user:
                 return Response(
@@ -68,13 +68,12 @@ class UserLoginAPIView(APIView):
             })
             
         except Exception as e:
-            logger.error(f"Login error: {str(e)}")  # Use logger instead of print
+            logger.error(f"Login error: {str(e)}")
             return Response(
                 {'error': 'Internal server error'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    
 class UserLogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -83,30 +82,26 @@ class UserLogoutView(APIView):
         token = RefreshToken(refresh_token)
         token.blacklist()
         return Response({'message': 'Log out successfully'}, status=status.HTTP_205_RESET_CONTENT)
-    
-class ProductListView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+
+# Consolidated Product ViewSet (replaces ProductListView, ProductCreateView, and ProductDetailView)
+class ProductViewSet(viewsets.ModelViewSet):
+    parser_classes = [parsers.MultiPartParser, parsers.JSONParser]
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     pagination_class = CustomPagination
+    permission_classes = [permissions.IsAuthenticated]
 
-class ProductCreateView(generics.CreateAPIView):
-    permission_classes = [permissions.IsAdminUser]
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return super().get_permissions()
 
-    def post(self, request, *args, **kwargs):
-        # Handle file uploads properly
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)   
-
-class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer         
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class OrderListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -139,7 +134,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer  
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]      
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 from django.http import JsonResponse
 from django.urls import get_resolver
@@ -151,7 +146,7 @@ def show_all_urls(request):
     
     def collect_urls(url_patterns, prefix=''):
         for pattern in url_patterns:
-            if hasattr(pattern, 'url_patterns'):  # For include() patterns
+            if hasattr(pattern, 'url_patterns'):
                 collect_urls(pattern.url_patterns, prefix + str(pattern.pattern))
             else:
                 url_list.append(prefix + str(pattern.pattern))
