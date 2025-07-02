@@ -69,7 +69,7 @@ const Products = () => {
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/api/products/${id}/`);
+      await api.delete(`products/${id}/`);
       setProducts(products.filter(product => product.id !== id));
     } catch (error) {
       console.error('Delete error:', error);
