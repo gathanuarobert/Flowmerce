@@ -11,7 +11,8 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'  
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True},
+            'image': {'required': False, 'allow_null': True}  
         }
 
     def create(self, validated_data):
