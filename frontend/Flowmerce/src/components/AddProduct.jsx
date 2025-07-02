@@ -7,6 +7,10 @@ const AddProduct = () => {
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [error, setError] = useState(null);
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [customCategory, setCustomCategory] = useState('');
   
   const [productData, setProductData] = useState({
     title: '',
@@ -21,19 +25,54 @@ const AddProduct = () => {
     status: 'available'
   });
 
-  // Fetch categories and tags when component mounts
+  // Default categories that work for most businesses
+  const defaultCategories = [
+    'Electronics',
+    'Clothing',
+    'Home & Garden',
+    'Beauty & Personal Care',
+    'Sports & Outdoors',
+    'Toys & Games',
+    'Food & Beverage',
+    'Books & Media',
+    'Office Supplies',
+    'Health & Wellness',
+    'Automotive',
+    'Pet Supplies',
+    'Other'
+  ];
+
+  // Fetch tags when component mounts
   useEffect(() => {
     const fetchInitialData = async () => {
+      setIsFetching(true);
+      setError(null);
       try {
-        const [categoriesRes, tagsRes] = await Promise.all([
-          api.get('/categories/'),
-          api.get('/tags/')
-        ]);
+        const tagsRes = await api.get('/tags/');
         
-        setCategories(categoriesRes.data);
-        setTags(tagsRes.data);
+        const tagsData = Array.isArray(tagsRes.data) 
+          ? tagsRes.data 
+          : tagsRes.data?.data || [];
+        
+        setTags(tagsData);
+        
+        // Combine default categories with any from the database
+        try {
+          const categoriesRes = await api.get('/categories/');
+          const dbCategories = Array.isArray(categoriesRes.data)
+            ? categoriesRes.data.map(cat => cat.title)
+            : [];
+          setCategories([...new Set([...defaultCategories, ...dbCategories])]);
+        } catch (categoriesError) {
+          console.error('Error fetching categories, using defaults:', categoriesError);
+          setCategories(defaultCategories);
+        }
       } catch (error) {
         console.error('Error fetching initial data:', error);
+        setError('Failed to load initial data. Please try again later.');
+        setCategories(defaultCategories);
+      } finally {
+        setIsFetching(false);
       }
     };
     
@@ -48,11 +87,31 @@ const AddProduct = () => {
     }));
   };
 
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    if (value === 'Other') {
+      setShowCustomCategory(true);
+      setProductData(prev => ({ ...prev, category: '' }));
+    } else {
+      setShowCustomCategory(false);
+      setProductData(prev => ({ ...prev, category: value }));
+      setCustomCategory('');
+    }
+  };
+
+  const handleCustomCategoryChange = (e) => {
+    const value = e.target.value;
+    setCustomCategory(value);
+    setProductData(prev => ({ ...prev, category: value }));
+  };
+
   const handleFileChange = (e) => {
-    setProductData(prev => ({
-      ...prev,
-      image: e.target.files[0]
-    }));
+    if (e.target.files && e.target.files[0]) {
+      setProductData(prev => ({
+        ...prev,
+        image: e.target.files[0]
+      }));
+    }
   };
 
   const handleTagToggle = (tagId) => {
@@ -67,28 +126,39 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       const formData = new FormData();
       
       // Append all product data to formData
       Object.entries(productData).forEach(([key, value]) => {
-        if (key === 'tags') {
-          value.forEach(tagId => formData.append('tags', tagId));
-        } else if (value !== null) {
+        if (key === 'tags' && Array.isArray(value) && value.length > 0) {
+          value.forEach(tagId => formData.append('tags[]', tagId));
+        } else if (value !== null && value !== undefined) {
           formData.append(key, value);
         }
       });
 
-      const response = await api.post('/products/', formData, {
+      // If a custom category was entered, save it to the database first
+      if (showCustomCategory && customCategory.trim() !== '') {
+        try {
+          await api.post('/categories/', { title: customCategory });
+        } catch (categoryError) {
+          console.error('Error saving new category:', categoryError);
+        }
+      }
+
+      await api.post('/products/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      navigate('/products'); // Redirect to products page after success
+      navigate('/products');
     } catch (error) {
       console.error('Error creating product:', error);
+      setError('Failed to create product. Please check your inputs and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +173,12 @@ const AddProduct = () => {
   return (
     <div className="p-6 bg-white rounded-xl max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
+      
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
@@ -132,21 +208,38 @@ const AddProduct = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category*</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
               name="category"
-              value={productData.category}
-              onChange={handleChange}
-              required
+              value={productData.category === customCategory ? 'Other' : productData.category}
+              onChange={handleCategoryChange}
               className={selectClasses}
+              disabled={isFetching}
             >
-              <option value="">Select a category</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.title}
-                </option>
-              ))}
+              <option value="">Select a category (optional)</option>
+              {isFetching ? (
+                <option disabled>Loading categories...</option>
+              ) : (
+                categories.map((category, index) => (
+                  <option key={index} value={category}>
+                    {category}
+                  </option>
+                ))
+              )}
             </select>
+            
+            {showCustomCategory && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  name="customCategory"
+                  placeholder="Enter your custom category"
+                  value={customCategory}
+                  onChange={handleCustomCategoryChange}
+                  className={inputClasses}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -155,6 +248,7 @@ const AddProduct = () => {
               type="number"
               name="price"
               min="0"
+              step="0.01"
               value={productData.price}
               onChange={handleChange}
               required
@@ -228,21 +322,25 @@ const AddProduct = () => {
         {/* Tags */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-          <div className="flex flex-wrap gap-2">
-            {tags.map(tag => (
-              <div 
-                key={tag.id}
-                onClick={() => handleTagToggle(tag.id)}
-                className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
-                  productData.tags.includes(tag.id)
-                    ? 'bg-[#ff5c00] text-white'
-                    : 'bg-[#F49CAC]/30 text-gray-800 hover:bg-[#F49CAC]/50'
-                }`}
-              >
-                {tag.title}
-              </div>
-            ))}
-          </div>
+          {isFetching ? (
+            <div className="text-gray-500">Loading tags...</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <div 
+                  key={tag.id}
+                  onClick={() => handleTagToggle(tag.id)}
+                  className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
+                    productData.tags.includes(tag.id)
+                      ? 'bg-[#ff5c00] text-white'
+                      : 'bg-[#F49CAC]/30 text-gray-800 hover:bg-[#F49CAC]/50'
+                  }`}
+                >
+                  {tag.title}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Form Actions */}
@@ -256,9 +354,9 @@ const AddProduct = () => {
           </button>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isFetching}
             className={`px-6 py-2 rounded-lg text-white transition-colors ${
-              isLoading ? 'bg-[#ff5c00]/70' : 'bg-[#ff5c00] hover:bg-[#e65100]'
+              isLoading || isFetching ? 'bg-[#ff5c00]/70' : 'bg-[#ff5c00] hover:bg-[#e65100]'
             }`}
           >
             {isLoading ? 'Saving...' : 'Save Product'}
