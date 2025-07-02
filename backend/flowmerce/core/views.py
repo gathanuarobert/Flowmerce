@@ -93,7 +93,15 @@ class ProductListView(generics.ListAPIView):
 class ProductCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAdminUser]
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer   
+    serializer_class = ProductSerializer
+
+    def post(self, request, *args, **kwargs):
+        # Handle file uploads properly
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)   
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -132,3 +140,21 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer  
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]      
+
+from django.http import JsonResponse
+from django.urls import get_resolver
+
+def show_all_urls(request):
+    """Debug view to show all registered URLs"""
+    resolver = get_resolver()
+    url_list = []
+    
+    def collect_urls(url_patterns, prefix=''):
+        for pattern in url_patterns:
+            if hasattr(pattern, 'url_patterns'):  # For include() patterns
+                collect_urls(pattern.url_patterns, prefix + str(pattern.pattern))
+            else:
+                url_list.append(prefix + str(pattern.pattern))
+    
+    collect_urls(resolver.url_patterns)
+    return JsonResponse({'urls': url_list})
