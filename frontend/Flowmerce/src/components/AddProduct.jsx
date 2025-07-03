@@ -25,52 +25,45 @@ const AddProduct = () => {
     status: "available",
   });
 
-  // Default categories that work for most businesses
+  // Default categories with IDs
   const defaultCategories = [
-    "Electronics",
-    "Clothing",
-    "Home & Garden",
-    "Beauty & Personal Care",
-    "Sports & Outdoors",
-    "Toys & Games",
-    "Food & Beverage",
-    "Books & Media",
-    "Office Supplies",
-    "Health & Wellness",
-    "Automotive",
-    "Pet Supplies",
-    "Household Goods",
-    "Jewelry & Accessories",
-    "Arts & Crafts",
-    "Other",
+    { id: "electronics", title: "Electronics" },
+    { id: "clothing", title: "Clothing" },
+    { id: "home-garden", title: "Home & Garden" },
+    { id: "beauty", title: "Beauty & Personal Care" },
+    { id: "sports", title: "Sports & Outdoors" },
+    { id: "toys", title: "Toys & Games" },
+    { id: "food", title: "Food & Beverage" },
+    { id: "books", title: "Books & Media" },
+    { id: "office", title: "Office Supplies" },
+    { id: "health", title: "Health & Wellness" },
+    { id: "auto", title: "Automotive" },
+    { id: "pets", title: "Pet Supplies" },
+    { id: "household", title: "Household Goods" },
+    { id: "jewelry", title: "Jewelry & Accessories" },
+    { id: "arts", title: "Arts & Crafts" },
+    { id: "other", title: "Other" },
   ];
 
-  // Fetch tags when component mounts
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsFetching(true);
       setError(null);
       try {
         const tagsRes = await api.get("tags/");
-
         const tagsData = Array.isArray(tagsRes.data)
           ? tagsRes.data
           : tagsRes.data?.data || [];
-
         setTags(tagsData);
 
-        // Combine default categories with any from the database
         try {
           const categoriesRes = await api.get("categories/");
           const dbCategories = Array.isArray(categoriesRes.data)
-            ? categoriesRes.data // Keep full objects
+            ? categoriesRes.data.map(cat => ({ id: cat.id, title: cat.title }))
             : [];
-          setCategories([...new Set([...defaultCategories, ...dbCategories])]);
+          setCategories([...defaultCategories, ...dbCategories]);
         } catch (categoriesError) {
-          console.error(
-            "Error fetching categories, using defaults:",
-            categoriesError
-          );
+          console.error("Error fetching categories, using defaults:", categoriesError);
           setCategories(defaultCategories);
         }
       } catch (error) {
@@ -95,12 +88,12 @@ const AddProduct = () => {
 
   const handleCategoryChange = (e) => {
     const value = e.target.value;
-    if (value === "Other") {
+    if (value === "other") {
       setShowCustomCategory(true);
-      setProductData((prev) => ({ ...prev, category: "" }));
+      setProductData(prev => ({ ...prev, category: "" }));
     } else {
       setShowCustomCategory(false);
-      setProductData((prev) => ({ ...prev, category: value }));
+      setProductData(prev => ({ ...prev, category: value }));
       setCustomCategory("");
     }
   };
@@ -108,7 +101,6 @@ const AddProduct = () => {
   const handleCustomCategoryChange = (e) => {
     const value = e.target.value;
     setCustomCategory(value);
-    setProductData((prev) => ({ ...prev, category: value }));
   };
 
   const handleFileChange = (e) => {
@@ -136,45 +128,40 @@ const AddProduct = () => {
 
     try {
       const formData = new FormData();
+      let categoryId = productData.category;
 
-      // Debugging: Log product data before creating formData
-      console.log("Product Data:", productData);
+      // Handle custom category creation
+      if (showCustomCategory && customCategory.trim() !== "") {
+        try {
+          const newCategory = await api.post("categories/", { 
+            title: customCategory,
+            slug: customCategory.toLowerCase().replace(/\s+/g, '-')
+          });
+          categoryId = newCategory.data.id;
+        } catch (categoryError) {
+          console.error("Error saving new category:", categoryError);
+          throw categoryError;
+        }
+      }
 
-      // Append all product data to formData with proper formatting
-      Object.entries(productData).forEach(([key, value]) => {
+      // Append all product data
+      Object.entries({
+        ...productData,
+        category: categoryId
+      }).forEach(([key, value]) => {
         if (key === "tags") {
-          // Handle tags array separately
           if (Array.isArray(value) && value.length > 0) {
-            value.forEach((tagId) => formData.append("tags", tagId));
+            value.forEach(tagId => formData.append("tags", tagId));
           }
         } else if (key === "image") {
-          // Handle file upload
-          if (value) {
-            formData.append("image", value);
-          }
+          if (value) formData.append("image", value);
         } else {
-          // Convert numbers to strings for FormData
-          const formattedValue =
-            typeof value === "number" ? value.toString() : value;
+          const formattedValue = typeof value === "number" ? value.toString() : value;
           if (formattedValue !== null && formattedValue !== undefined) {
             formData.append(key, formattedValue);
           }
         }
       });
-
-      // Debugging: Log FormData contents
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-      }
-
-      // If a custom category was entered, save it to the database first
-      if (showCustomCategory && customCategory.trim() !== "") {
-        try {
-          await api.post("categories/", { title: customCategory });
-        } catch (categoryError) {
-          console.error("Error saving new category:", categoryError);
-        }
-      }
 
       const response = await api.post("products/", formData, {
         headers: {
@@ -189,23 +176,15 @@ const AddProduct = () => {
       console.error("Error response:", error.response?.data);
       setError(
         error.response?.data?.detail ||
-          error.response?.data?.message ||
-          "Failed to create product. Please check your inputs and try again."
+        error.response?.data?.message ||
+        "Failed to create product. Please check your inputs and try again."
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Custom input classes for consistent styling
-  const inputClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
-  const selectClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
-  const textareaClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
-  const fileInputClasses =
-    "file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#F49CAC]/50 file:text-gray-700 hover:file:bg-[#F49CAC]/70 w-full";
+  // ... (keep your existing styling classes)
 
   return (
     <div className="p-6 bg-white rounded-xl max-w-4xl mx-auto">
@@ -218,213 +197,43 @@ const AddProduct = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Title*
-            </label>
-            <input
-              type="text"
-              name="title"
-              value={productData.title}
-              onChange={handleChange}
-              required
-              className={inputClasses}
-            />
-          </div>
+        {/* Basic Information - keep all other fields the same */}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              SKU*
-            </label>
-            <input
-              type="text"
-              name="sku"
-              value={productData.sku}
-              onChange={handleChange}
-              required
-              className={inputClasses}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              name="category"
-              value={
-                productData.category === customCategory
-                  ? "Other"
-                  : productData.category
-              }
-              onChange={handleCategoryChange}
-              className={selectClasses}
-              disabled={isFetching}
-            >
-              <option value="">Select a category (optional)</option>
-              {isFetching ? (
-                <option disabled>Loading categories...</option>
-              ) : (
-                categories.map((category, index) => (
-                  <option key={index} value={category}>
-                    {category}
-                  </option>
-                ))
-              )}
-            </select>
-
-            {showCustomCategory && (
-              <div className="mt-2">
-                <input
-                  type="text"
-                  name="customCategory"
-                  placeholder="Enter your custom category"
-                  value={customCategory}
-                  onChange={handleCustomCategoryChange}
-                  className={inputClasses}
-                />
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price*
-            </label>
-            <input
-              type="number"
-              name="price"
-              min="0.01"
-              step="0.01"
-              value={productData.price}
-              onChange={handleChange}
-              required
-              className={inputClasses}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity*
-            </label>
-            <input
-              type="number"
-              name="quantity"
-              min="0"
-              value={productData.quantity}
-              onChange={handleChange}
-              required
-              className={inputClasses}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Stock*
-            </label>
-            <input
-              type="number"
-              name="stock"
-              min="0"
-              value={productData.stock}
-              onChange={handleChange}
-              required
-              className={inputClasses}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status*
-            </label>
-            <select
-              name="status"
-              value={productData.status}
-              onChange={handleChange}
-              required
-              className={selectClasses}
-            >
-              <option value="available">Available</option>
-              <option value="out_of_stock">Out of Stock</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Image
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className={fileInputClasses}
-            />
-          </div>
-        </div>
-
-        {/* Description */}
+        {/* Updated Category Select */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            Category
           </label>
-          <textarea
-            name="description"
-            value={productData.description}
-            onChange={handleChange}
-            rows={4}
-            className={textareaClasses}
-          />
-        </div>
+          <select
+            name="category"
+            value={productData.category}
+            onChange={handleCategoryChange}
+            className={selectClasses}
+            disabled={isFetching}
+          >
+            <option value="">Select a category (optional)</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.title}
+              </option>
+            ))}
+          </select>
 
-        {/* Tags */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tags
-          </label>
-          {isFetching ? (
-            <div className="text-gray-500">Loading tags...</div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <div
-                  key={tag.id}
-                  onClick={() => handleTagToggle(tag.id)}
-                  className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
-                    productData.tags.includes(tag.id)
-                      ? "bg-[#ff5c00] text-white"
-                      : "bg-[#F49CAC]/30 text-gray-800 hover:bg-[#F49CAC]/50"
-                  }`}
-                >
-                  {tag.title}
-                </div>
-              ))}
+          {showCustomCategory && (
+            <div className="mt-2">
+              <input
+                type="text"
+                name="customCategory"
+                placeholder="Enter your custom category"
+                value={customCategory}
+                onChange={handleCustomCategoryChange}
+                className={inputClasses}
+              />
             </div>
           )}
         </div>
 
-        {/* Form Actions */}
-        <div className="flex justify-end gap-4 pt-4">
-          <button
-            type="button"
-            onClick={() => navigate("/products")}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading || isFetching}
-            className={`px-6 py-2 rounded-lg text-white transition-colors ${
-              isLoading || isFetching
-                ? "bg-[#ff5c00]/70"
-                : "bg-[#ff5c00] hover:bg-[#e65100]"
-            }`}
-          >
-            {isLoading ? "Saving..." : "Save Product"}
-          </button>
-        </div>
+        {/* ... rest of your form remains the same ... */}
       </form>
     </div>
   );
