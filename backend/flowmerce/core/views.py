@@ -7,6 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from django.utils.text import slugify
 from .models import User, Product, Order, OrderItem, Category, Tag
 from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer, TagSerializer
 
@@ -130,6 +131,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        # Auto-generate slug if not provided
+        if 'slug' not in serializer.validated_data:
+            serializer.validated_data['slug'] = slugify(serializer.validated_data['title'])
+        serializer.save()
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
