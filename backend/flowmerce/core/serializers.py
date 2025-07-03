@@ -7,28 +7,23 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'is_active', 'last_login']
 
 class ProductSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(  # 👈 Add this
+        queryset=Category.objects.all(),
+        required=True
+    )
+
     class Meta:
         model = Product
-        fields = '__all__'  
+        fields = '__all__'
         extra_kwargs = {
-            'password': {'write_only': True},
             'image': {'required': False, 'allow_null': True},
-            'price': {'required': True},
-            'stock': {'required': True}  
+            'slug': {'required': False}  # Auto-generated in model
         }
 
-        def validate_price(self, value):
-            if value <= 0:
-                raise serializers.ValidationError("Price must be positive")
-            return value
-
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            name=validated_data['name'],
-            email=validated_data['email'],
-            password=validated_data['password']
-        )
-        return user  
+    def validate_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Price must be positive")
+        return value
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
