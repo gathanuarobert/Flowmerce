@@ -12,8 +12,15 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = '__all__'  
         extra_kwargs = {
             'password': {'write_only': True},
-            'image': {'required': False, 'allow_null': True}  
+            'image': {'required': False, 'allow_null': True},
+            'price': {'required': True},
+            'stock': {'required': True}  
         }
+
+        def validate_price(self, value):
+            if value <= 0:
+                raise serializers.ValidationError("Price must be positive")
+            return value
 
     def create(self, validated_data):
         user = User.objects.create_user(
