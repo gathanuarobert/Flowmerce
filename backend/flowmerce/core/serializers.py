@@ -7,7 +7,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'is_active', 'last_login']
 
 class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.PrimaryKeyRelatedField(  # 👈 Add this
+    category = serializers.SlugRelatedField(
+        slug_field='id',  # Changed from PrimaryKeyRelatedField
         queryset=Category.objects.all(),
         required=True
     )
@@ -17,13 +18,14 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {
             'image': {'required': False, 'allow_null': True},
-            'slug': {'required': False}  # Auto-generated in model
+            'slug': {'required': False}
         }
 
     def validate_price(self, value):
         if value <= 0:
             raise serializers.ValidationError("Price must be positive")
         return value
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
