@@ -7,12 +7,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'is_active', 'last_login']
 
 class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(
-        slug_field='id',  # Changed from PrimaryKeyRelatedField
-        queryset=Category.objects.all(),
-        required=True
-    )
-
+    category = serializers.CharField(write_only=True)  # Keep as CharField for input
+    
     class Meta:
         model = Product
         fields = '__all__'
@@ -21,11 +17,30 @@ class ProductSerializer(serializers.ModelSerializer):
             'slug': {'required': False}
         }
 
-    def validate_price(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Price must be positive")
-        return value
+    def validate(self, data):
+        # Convert category string to actual Category instance
+        try:
+            data['category'] = Category.objects.get(id=data['category'])
+        except (Category.DoesNotExist, ValueError):
+            raise serializers.ValidationError({
+                'category': 'Invalid category ID'
+            })
+        
+        # Convert string numbers to proper types
+        if 'price' in data:
+            try:
+                data['price'] = float(data['price'])
+            except (TypeError, ValueError):
+                raise serializers.ValidationError({
+                    'price': 'Price must be a number'
+                })
+        
+        return data
 
+    def to_internal_value(self, data):
+        # Handle both FormData and JSON inputs
+        ret = super().to_internal_value(data)
+        return ret
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
