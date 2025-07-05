@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'is_active', 'last_login']
 
 class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.CharField(write_only=True)  # Keep as CharField for input
+    category = serializers.CharField()  # Keep as CharField for input
     
     class Meta:
         model = Product
@@ -18,6 +18,13 @@ class ProductSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
+        # Handle array conversion from MultiPartParser
+        if isinstance(data.get('category'), list):
+            data['category'] = data['category'][0]
+            
+        if isinstance(data.get('price'), list):
+            data['price'] = data['price'][0]
+            
         # Convert category string to actual Category instance
         try:
             data['category'] = Category.objects.get(id=data['category'])
@@ -26,21 +33,15 @@ class ProductSerializer(serializers.ModelSerializer):
                 'category': 'Invalid category ID'
             })
         
-        # Convert string numbers to proper types
-        if 'price' in data:
-            try:
-                data['price'] = float(data['price'])
-            except (TypeError, ValueError):
-                raise serializers.ValidationError({
-                    'price': 'Price must be a number'
-                })
+        # Ensure price is properly converted
+        try:
+            data['price'] = float(data['price'])
+        except (TypeError, ValueError):
+            raise serializers.ValidationError({
+                'price': 'Price must be a number'
+            })
         
         return data
-
-    def to_internal_value(self, data):
-        # Handle both FormData and JSON inputs
-        ret = super().to_internal_value(data)
-        return ret
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
