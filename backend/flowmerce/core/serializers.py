@@ -7,8 +7,9 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'is_active', 'last_login']
 
 class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.CharField()  # Keep as CharField for input
-    
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all(), required=False)
+
     class Meta:
         model = Product
         fields = '__all__'
@@ -17,31 +18,12 @@ class ProductSerializer(serializers.ModelSerializer):
             'slug': {'required': False}
         }
 
-    def validate(self, data):
-        # Handle array conversion from MultiPartParser
-        if isinstance(data.get('category'), list):
-            data['category'] = data['category'][0]
-            
-        if isinstance(data.get('price'), list):
-            data['price'] = data['price'][0]
-            
-        # Convert category string to actual Category instance
+    def validate_price(self, value):
         try:
-            data['category'] = Category.objects.get(id=data['category'])
-        except (Category.DoesNotExist, ValueError):
-            raise serializers.ValidationError({
-                'category': 'Invalid category ID'
-            })
-        
-        # Ensure price is properly converted
-        try:
-            data['price'] = float(data['price'])
+            return float(value)
         except (TypeError, ValueError):
-            raise serializers.ValidationError({
-                'price': 'Price must be a number'
-            })
-        
-        return data
+            raise serializers.ValidationError("Price must be a number")
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
