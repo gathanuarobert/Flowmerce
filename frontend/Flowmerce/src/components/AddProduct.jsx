@@ -27,23 +27,33 @@ const AddProduct = () => {
 
   // Default categories with IDs
   const defaultCategories = [
-    { id: "electronics", title: "Electronics" },
-    { id: "clothing", title: "Clothing" },
-    { id: "home-garden", title: "Home & Garden" },
-    { id: "beauty", title: "Beauty & Personal Care" },
-    { id: "sports", title: "Sports & Outdoors" },
-    { id: "toys", title: "Toys & Games" },
-    { id: "food", title: "Food & Beverage" },
-    { id: "books", title: "Books & Media" },
-    { id: "office", title: "Office Supplies" },
-    { id: "health", title: "Health & Wellness" },
-    { id: "auto", title: "Automotive" },
-    { id: "pets", title: "Pet Supplies" },
-    { id: "household", title: "Household Goods" },
-    { id: "jewelry", title: "Jewelry & Accessories" },
-    { id: "arts", title: "Arts & Crafts" },
-    { id: "other", title: "Other" },
+    { id: "1", title: "Electronics" },
+    { id: "2", title: "Clothing" },
+    { id: "3", title: "Home & Garden" },
+    { id: "4", title: "Beauty & Personal Care" },
+    { id: "5", title: "Sports & Outdoors" },
+    { id: "6", title: "Toys & Games" },
+    { id: "7", title: "Food & Beverage" },
+    { id: "8", title: "Books & Media" },
+    { id: "9", title: "Office Supplies" },
+    { id: "10", title: "Health & Wellness" },
+    { id: "11", title: "Automotive" },
+    { id: "12", title: "Pet Supplies" },
+    { id: "13", title: "Household Goods" },
+    { id: "14", title: "Jewelry & Accessories" },
+    { id: "15", title: "Arts & Crafts" },
+    { id: "16", title: "Other" },
   ];
+
+  // Style classes
+  const inputClasses =
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+  const selectClasses =
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+  const textareaClasses =
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+  const fileInputClasses =
+    "file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#F49CAC]/50 file:text-gray-700 hover:file:bg-[#F49CAC]/70 w-full";
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -59,11 +69,17 @@ const AddProduct = () => {
         try {
           const categoriesRes = await api.get("categories/");
           const dbCategories = Array.isArray(categoriesRes.data)
-            ? categoriesRes.data.map(cat => ({ id: cat.id, title: cat.title }))
+            ? categoriesRes.data.map((cat) => ({
+                id: cat.id,
+                title: cat.title,
+              }))
             : [];
           setCategories([...defaultCategories, ...dbCategories]);
         } catch (categoriesError) {
-          console.error("Error fetching categories, using defaults:", categoriesError);
+          console.error(
+            "Error fetching categories, using defaults:",
+            categoriesError
+          );
           setCategories(defaultCategories);
         }
       } catch (error) {
@@ -90,10 +106,10 @@ const AddProduct = () => {
     const value = e.target.value;
     if (value === "other") {
       setShowCustomCategory(true);
-      setProductData(prev => ({ ...prev, category: "" }));
+      setProductData((prev) => ({ ...prev, category: "" }));
     } else {
       setShowCustomCategory(false);
-      setProductData(prev => ({ ...prev, category: value }));
+      setProductData((prev) => ({ ...prev, category: value }));
       setCustomCategory("");
     }
   };
@@ -122,69 +138,82 @@ const AddProduct = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  e.preventDefault();
+  setIsLoading(true);
+  setError(null);
 
-    try {
-      const formData = new FormData();
-      let categoryId = productData.category;
+  try {
+    const formData = new FormData();
+    let categoryId = productData.category;
 
-      // Handle custom category creation
-      if (showCustomCategory && customCategory.trim() !== "") {
-        try {
-          const newCategory = await api.post("categories/", { 
-            title: customCategory,
-            slug: customCategory.toLowerCase().replace(/\s+/g, '-')
-          });
-          categoryId = newCategory.data.id;
-        } catch (categoryError) {
-          console.error("Error saving new category:", categoryError);
-          throw categoryError;
-        }
+    // Handle custom category creation
+    if (showCustomCategory && customCategory.trim() !== "") {
+      try {
+        const newCategory = await api.post("categories/", { 
+          title: customCategory,
+          slug: customCategory.toLowerCase().replace(/\s+/g, '-')
+        });
+        categoryId = newCategory.data.id;
+      } catch (categoryError) {
+        console.error("Error saving new category:", categoryError);
+        throw categoryError;
       }
-
-      // Append all product data
-      Object.entries({
-        ...productData,
-        category: categoryId
-      }).forEach(([key, value]) => {
-        if (key === "tags") {
-          if (Array.isArray(value) && value.length > 0) {
-            value.forEach(tagId => formData.append("tags", tagId));
-          }
-        } else if (key === "image") {
-          if (value) formData.append("image", value);
-        } else {
-          const formattedValue = typeof value === "number" ? value.toString() : value;
-          if (formattedValue !== null && formattedValue !== undefined) {
-            formData.append(key, formattedValue);
-          }
-        }
-      });
-
-      const response = await api.post("products/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      });
-
-      navigate("/products");
-    } catch (error) {
-      console.error("Full error:", error);
-      console.error("Error response:", error.response?.data);
-      setError(
-        error.response?.data?.detail ||
-        error.response?.data?.message ||
-        "Failed to create product. Please check your inputs and try again."
-      );
-    } finally {
-      setIsLoading(false);
     }
-  };
 
-  // ... (keep your existing styling classes)
+    // Append fields one by one with explicit control
+    formData.append('title', String(productData.title));
+    formData.append('description', String(productData.description));
+    formData.append('price', String(productData.price));
+    formData.append('category', String(categoryId));
+    formData.append('quantity', String(productData.quantity));
+    formData.append('stock', String(productData.stock));
+    formData.append('sku', String(productData.sku));
+    formData.append('status', String(productData.status));
+    
+    if (productData.image) {
+      formData.append('image', productData.image);
+    }
+
+    // Handle tags
+    productData.tags.forEach(tag => {
+      formData.append('tags', String(tag));
+    });
+
+    // Debug: Verify final payload
+    console.log("Final payload:", {
+      title: productData.title,
+      description: productData.description,
+      price: productData.price,
+      category: categoryId,
+      quantity: productData.quantity,
+      stock: productData.stock,
+      sku: productData.sku,
+      status: productData.status,
+      tags: productData.tags,
+      hasImage: !!productData.image
+    });
+
+    const response = await api.post("products/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      },
+    });
+
+    navigate("/products");
+  } catch (error) {
+    console.error("Full error:", error);
+    console.error("Error response:", error.response?.data);
+    setError(
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to create product. Please check your inputs and try again."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="p-6 bg-white rounded-xl max-w-4xl mx-auto">
@@ -197,43 +226,201 @@ const AddProduct = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information - keep all other fields the same */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Title*
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={productData.title}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
+          </div>
 
-        {/* Updated Category Select */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              SKU*
+            </label>
+            <input
+              type="text"
+              name="sku"
+              value={productData.sku}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              name="category"
+              value={productData.category}
+              onChange={handleCategoryChange}
+              className={selectClasses}
+              disabled={isFetching}
+            >
+              <option value="">Select a category (optional)</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.title}
+                </option>
+              ))}
+            </select>
+
+            {showCustomCategory && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  name="customCategory"
+                  placeholder="Enter your custom category"
+                  value={customCategory}
+                  onChange={handleCustomCategoryChange}
+                  className={inputClasses}
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Price*
+            </label>
+            <input
+              type="number"
+              name="price"
+              min="0.01"
+              step="0.01"
+              value={productData.price}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Quantity*
+            </label>
+            <input
+              type="number"
+              name="quantity"
+              min="0"
+              value={productData.quantity}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Stock*
+            </label>
+            <input
+              type="number"
+              name="stock"
+              min="0"
+              value={productData.stock}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status*
+            </label>
+            <select
+              name="status"
+              value={productData.status}
+              onChange={handleChange}
+              required
+              className={selectClasses}
+            >
+              <option value="available">Available</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className={fileInputClasses}
+            />
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category
+            Description
           </label>
-          <select
-            name="category"
-            value={productData.category}
-            onChange={handleCategoryChange}
-            className={selectClasses}
-            disabled={isFetching}
-          >
-            <option value="">Select a category (optional)</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.title}
-              </option>
-            ))}
-          </select>
+          <textarea
+            name="description"
+            value={productData.description}
+            onChange={handleChange}
+            rows={4}
+            className={textareaClasses}
+          />
+        </div>
 
-          {showCustomCategory && (
-            <div className="mt-2">
-              <input
-                type="text"
-                name="customCategory"
-                placeholder="Enter your custom category"
-                value={customCategory}
-                onChange={handleCustomCategoryChange}
-                className={inputClasses}
-              />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tags
+          </label>
+          {isFetching ? (
+            <div className="text-gray-500">Loading tags...</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <div
+                  key={tag.id}
+                  onClick={() => handleTagToggle(tag.id)}
+                  className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
+                    productData.tags.includes(tag.id)
+                      ? "bg-[#ff5c00] text-white"
+                      : "bg-[#F49CAC]/30 text-gray-800 hover:bg-[#F49CAC]/50"
+                  }`}
+                >
+                  {tag.title}
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        {/* ... rest of your form remains the same ... */}
+        <div className="flex justify-end gap-4 pt-4">
+          <button
+            type="button"
+            onClick={() => navigate("/products")}
+            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading || isFetching}
+            className={`px-6 py-2 rounded-lg text-white transition-colors ${
+              isLoading || isFetching
+                ? "bg-[#ff5c00]/70"
+                : "bg-[#ff5c00] hover:bg-[#e65100]"
+            }`}
+          >
+            {isLoading ? "Saving..." : "Save Product"}
+          </button>
+        </div>
       </form>
     </div>
   );
