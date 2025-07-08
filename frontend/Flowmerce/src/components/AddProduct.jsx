@@ -25,36 +25,6 @@ const AddProduct = () => {
     status: "available",
   });
 
-  // Default categories with IDs
-  const defaultCategories = [
-    { id: "1", title: "Electronics" },
-    { id: "2", title: "Clothing" },
-    { id: "3", title: "Home & Garden" },
-    { id: "4", title: "Beauty & Personal Care" },
-    { id: "5", title: "Sports & Outdoors" },
-    { id: "6", title: "Toys & Games" },
-    { id: "7", title: "Food & Beverage" },
-    { id: "8", title: "Books & Media" },
-    { id: "9", title: "Office Supplies" },
-    { id: "10", title: "Health & Wellness" },
-    { id: "11", title: "Automotive" },
-    { id: "12", title: "Pet Supplies" },
-    { id: "13", title: "Household Goods" },
-    { id: "14", title: "Jewelry & Accessories" },
-    { id: "15", title: "Arts & Crafts" },
-    { id: "16", title: "Other" },
-  ];
-
-  // Style classes
-  const inputClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
-  const selectClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
-  const textareaClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
-  const fileInputClasses =
-    "file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#F49CAC]/50 file:text-gray-700 hover:file:bg-[#F49CAC]/70 w-full";
-
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsFetching(true);
@@ -66,26 +36,17 @@ const AddProduct = () => {
           : tagsRes.data?.data || [];
         setTags(tagsData);
 
-        try {
-          const categoriesRes = await api.get("categories/");
-          const dbCategories = Array.isArray(categoriesRes.data)
-            ? categoriesRes.data.map((cat) => ({
-                id: cat.id,
-                title: cat.title,
-              }))
-            : [];
-          setCategories([...defaultCategories, ...dbCategories]);
-        } catch (categoriesError) {
-          console.error(
-            "Error fetching categories, using defaults:",
-            categoriesError
-          );
-          setCategories(defaultCategories);
-        }
-      } catch (error) {
-        console.error("Error fetching initial data:", error);
-        setError("Failed to load initial data. Please try again later.");
-        setCategories(defaultCategories);
+        const categoriesRes = await api.get("categories/");
+        const dbCategories = Array.isArray(categoriesRes.data)
+          ? categoriesRes.data.map((cat) => ({
+              id: parseInt(cat.id),
+              title: cat.title,
+            }))
+          : [];
+        setCategories(dbCategories);
+      } catch (err) {
+        console.error("Failed to fetch initial data:", err);
+        setError("Failed to load initial data.");
       } finally {
         setIsFetching(false);
       }
@@ -109,14 +70,13 @@ const AddProduct = () => {
       setProductData((prev) => ({ ...prev, category: "" }));
     } else {
       setShowCustomCategory(false);
-      setProductData((prev) => ({ ...prev, category: value }));
+      setProductData((prev) => ({ ...prev, category: parseInt(value) }));
       setCustomCategory("");
     }
   };
 
   const handleCustomCategoryChange = (e) => {
-    const value = e.target.value;
-    setCustomCategory(value);
+    setCustomCategory(e.target.value);
   };
 
   const handleFileChange = (e) => {
@@ -138,82 +98,74 @@ const AddProduct = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError(null);
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-  try {
-    const formData = new FormData();
-    let categoryId = productData.category;
+    try {
+      const formData = new FormData();
+      let categoryId = productData.category;
 
-    // Handle custom category creation
-    if (showCustomCategory && customCategory.trim() !== "") {
-      try {
-        const newCategory = await api.post("categories/", { 
+      if (showCustomCategory && customCategory.trim()) {
+        const newCategoryRes = await api.post("categories/", {
           title: customCategory,
-          slug: customCategory.toLowerCase().replace(/\s+/g, '-')
+          slug: customCategory.toLowerCase().replace(/\s+/g, "-"),
         });
-        categoryId = newCategory.data.id;
-      } catch (categoryError) {
-        console.error("Error saving new category:", categoryError);
-        throw categoryError;
+        categoryId = parseInt(newCategoryRes.data.id);
       }
+
+      formData.append("title", productData.title);
+      formData.append("description", productData.description);
+      formData.append("price", productData.price);
+      formData.append("category", categoryId);
+      formData.append("quantity", productData.quantity);
+      formData.append("stock", productData.stock);
+      formData.append("sku", productData.sku);
+      formData.append("status", productData.status);
+
+      if (productData.image) {
+        formData.append("image", productData.image);
+      }
+
+      productData.tags.forEach((tag) => {
+        formData.append("tags", tag);
+      });
+
+      await api.post("products/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      });
+
+      console.log(
+        "%c✅ Product created successfully!",
+        "color: green; font-weight: bold;"
+      );
+      console.log("🛍️ Created Product:", response.data);
+
+      navigate("/products");
+    } catch (err) {
+      console.error("Error submitting product:", err);
+      setError(
+        err.response?.data?.detail ||
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to create product."
+      );
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    // Append fields one by one with explicit control
-    formData.append('title', String(productData.title));
-    formData.append('description', String(productData.description));
-    formData.append('price', String(productData.price));
-    formData.append('category', String(categoryId));
-    formData.append('quantity', String(productData.quantity));
-    formData.append('stock', String(productData.stock));
-    formData.append('sku', String(productData.sku));
-    formData.append('status', String(productData.status));
-    
-    if (productData.image) {
-      formData.append('image', productData.image);
-    }
-
-    // Handle tags
-    productData.tags.forEach(tag => {
-      formData.append('tags', String(tag));
-    });
-
-    // Debug: Verify final payload
-    console.log("Final payload:", {
-      title: productData.title,
-      description: productData.description,
-      price: productData.price,
-      category: categoryId,
-      quantity: productData.quantity,
-      stock: productData.stock,
-      sku: productData.sku,
-      status: productData.status,
-      tags: productData.tags,
-      hasImage: !!productData.image
-    });
-
-    const response = await api.post("products/", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-      },
-    });
-
-    navigate("/products");
-  } catch (error) {
-    console.error("Full error:", error);
-    console.error("Error response:", error.response?.data);
-    setError(
-      error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to create product. Please check your inputs and try again."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const inputClasses =
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+  const selectClasses =
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+  const textareaClasses =
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+  const fileInputClasses =
+    "file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#F49CAC]/50 file:text-gray-700 hover:file:bg-[#F49CAC]/70 w-full";
 
   return (
     <div className="p-6 bg-white rounded-xl max-w-4xl mx-auto">
@@ -272,6 +224,7 @@ const AddProduct = () => {
                   {category.title}
                 </option>
               ))}
+              <option value="other">Other</option>
             </select>
 
             {showCustomCategory && (
