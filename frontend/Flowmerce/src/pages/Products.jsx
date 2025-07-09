@@ -18,6 +18,27 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get("/categories/");
+      const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setCategories(data);
+    } catch (err) {
+      console.error("Failed to fetch categories", err);
+    }
+  };
+
+  fetchCategories();
+}, []); 
+
+  const getCategoryTitle = (categoryId) => {
+  const cat = categories.find((c) => String(c.id) === String(categoryId));
+  return cat?.title || "Uncategorized";
+};
+
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -40,9 +61,10 @@ const Products = () => {
   }, []);
 
   const filteredProducts = (products || []).filter(product => 
-    product?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product?.category?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  product?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  getCategoryTitle(product?.category).toLowerCase().includes(searchTerm.toLowerCase())
+);
+
 
   const requestSort = (key) => {
     let direction = 'asc';
@@ -142,7 +164,7 @@ const Products = () => {
                 )}
                 {prod.title}
               </td>
-              <td>{prod.category?.title || 'Uncategorized'}</td>
+              <td>{getCategoryTitle(prod.category)}</td>
               <td>
                 <span className={`px-2 py-1 rounded-full text-sm ${statusColors[prod.status] || 'bg-gray-100'}`}>
                   {prod.status === 'available' ? 'In Stock' : 
@@ -151,7 +173,7 @@ const Products = () => {
                 </span>
               </td>
               <td>{prod.stock}</td>
-              <td>${prod.price?.toFixed(2) || '0.00'}</td>
+              <td>KSh. {prod.price?.toFixed(2) || '0.00'}</td>
               <td className="flex gap-2">
                 <Pencil
                   className="w-4 h-4 text-blue-600 cursor-pointer"
