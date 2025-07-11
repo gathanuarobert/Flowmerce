@@ -34,12 +34,7 @@ const Products = () => {
   fetchCategories();
 }, []); 
 
-  const getCategoryTitle = (categoryId) => {
-  const cat = categories.find((c) => String(c.id) === String(categoryId));
-  return cat?.title || "Uncategorized";
-};
-
-
+  
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -49,6 +44,7 @@ const Products = () => {
           ? response.data 
           : response.data?.results || response.data?.data || [];
         setProducts(data);
+        console.log("Fetched Products:", data);
       } catch (error) {
         setError(error.message);
         console.error('API error:', error);
@@ -164,7 +160,7 @@ const Products = () => {
                 )}
                 {prod.title}
               </td>
-              <td>{getCategoryTitle(prod.category)}</td>
+              <td>{prod.category?.title || "Uncategorized"}</td>
               <td>
                 <span className={`px-2 py-1 rounded-full text-sm ${statusColors[prod.status] || 'bg-gray-100'}`}>
                   {prod.status === 'available' ? 'In Stock' : 
