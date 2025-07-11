@@ -11,7 +11,6 @@ const AddProduct = () => {
   const [error, setError] = useState(null);
   const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const [productData, setProductData] = useState({
     title: "",
@@ -41,9 +40,9 @@ const AddProduct = () => {
     { id: "11", title: "Automotive" },
     { id: "12", title: "Pet Supplies" },
     { id: "13", title: "Household Goods" },
-    { id: "jewelry", title: "Jewelry & Accessories" },
-    { id: "arts", title: "Arts & Crafts" },
-    { id: "other", title: "Other" },
+    { id: "14", title: "Jewelry & Accessories" },
+    { id: "15", title: "Arts & Crafts" },
+    { id: "16", title: "Other" },
   ];
 
   // Style classes
@@ -139,84 +138,82 @@ const AddProduct = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  e.preventDefault();
+  setIsLoading(true);
+  setError(null);
 
-    try {
-      const formData = new FormData();
-      let categoryId = productData.category;
+  try {
+    const formData = new FormData();
+    let categoryId = productData.category;
 
-      // Handle custom category creation
-      if (showCustomCategory && customCategory.trim() !== "") {
-        try {
-          const newCategory = await api.post("categories/", {
-            title: customCategory,
-            slug: customCategory.toLowerCase().replace(/\s+/g, "-"),
-          });
-          categoryId = newCategory.data.id;
-        } catch (categoryError) {
-          console.error("Error saving new category:", categoryError);
-          throw categoryError;
-        }
+    // Handle custom category creation
+    if (showCustomCategory && customCategory.trim() !== "") {
+      try {
+        const newCategory = await api.post("categories/", { 
+          title: customCategory,
+          slug: customCategory.toLowerCase().replace(/\s+/g, '-')
+        });
+        categoryId = newCategory.data.id;
+      } catch (categoryError) {
+        console.error("Error saving new category:", categoryError);
+        throw categoryError;
       }
-
-      // Append fields one by one with explicit control
-      formData.append("title", String(productData.title));
-      formData.append("description", String(productData.description));
-      formData.append("price", String(productData.price));
-      formData.append("category", String(categoryId));
-      formData.append("quantity", String(productData.quantity));
-      formData.append("stock", String(productData.stock));
-      formData.append("sku", String(productData.sku));
-      formData.append("status", String(productData.status));
-
-      if (productData.image) {
-        formData.append("image", productData.image);
-      }
-
-      // Handle tags
-      productData.tags.forEach((tag) => {
-        formData.append("tags", String(tag));
-      });
-
-      // Debug: Verify final payload
-      console.log("Final payload:", {
-        title: productData.title,
-        description: productData.description,
-        price: productData.price,
-        category: categoryId,
-        quantity: productData.quantity,
-        stock: productData.stock,
-        sku: productData.sku,
-        status: productData.status,
-        tags: productData.tags,
-        hasImage: !!productData.image,
-      });
-
-      const response = await api.post("products/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      });
-
-      navigate("/products");
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (error) {
-      console.error("Full error:", error);
-      console.error("Error response:", error.response?.data);
-      setError(
-        error.response?.data?.detail ||
-          error.response?.data?.message ||
-          error.message ||
-          "Failed to create product. Please check your inputs and try again."
-      );
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    // Append fields one by one with explicit control
+    formData.append('title', String(productData.title));
+    formData.append('description', String(productData.description));
+    formData.append('price', String(productData.price));
+    formData.append('category', String(categoryId));
+    formData.append('quantity', String(productData.quantity));
+    formData.append('stock', String(productData.stock));
+    formData.append('sku', String(productData.sku));
+    formData.append('status', String(productData.status));
+    
+    if (productData.image) {
+      formData.append('image', productData.image);
+    }
+
+    // Handle tags
+    productData.tags.forEach(tag => {
+      formData.append('tags', String(tag));
+    });
+
+    // Debug: Verify final payload
+    console.log("Final payload:", {
+      title: productData.title,
+      description: productData.description,
+      price: productData.price,
+      category: categoryId,
+      quantity: productData.quantity,
+      stock: productData.stock,
+      sku: productData.sku,
+      status: productData.status,
+      tags: productData.tags,
+      hasImage: !!productData.image
+    });
+
+    const response = await api.post("products/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      },
+    });
+
+    navigate("/products");
+  } catch (error) {
+    console.error("Full error:", error);
+    console.error("Error response:", error.response?.data);
+    setError(
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to create product. Please check your inputs and try again."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="p-6 bg-white rounded-xl max-w-4xl mx-auto">
@@ -225,12 +222,6 @@ const AddProduct = () => {
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
           {typeof error === "object" ? JSON.stringify(error) : error}
-        </div>
-      )}
-
-      {showSuccess && (
-        <div className="fixed top-6 right-6 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300">
-          ✅ Product created successfully!
         </div>
       )}
 
