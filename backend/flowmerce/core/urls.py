@@ -31,6 +31,7 @@ urlpatterns = [
     path('orders/<int:pk>/', OrderDetailView.as_view(), name='order-detail'),
     path('debug/urls/', show_all_urls, name='debug-urls'),  # Add name for reference
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Only include router.urls once (choose one method)
 urlpatterns += router.urls
