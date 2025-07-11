@@ -6,8 +6,13 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'name', 'is_active', 'last_login']
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
 class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    category = CategorySerializer()
     tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all(), required=False)
 
     class Meta:
@@ -57,11 +62,6 @@ class OrderSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'employee': {'write_only': True}
         }
-
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = '__all__'
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
