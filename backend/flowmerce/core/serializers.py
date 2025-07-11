@@ -12,12 +12,24 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ProductSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
-    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tag.objects.all(), required=False)
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        write_only=True
+    )
+    category_details = CategorySerializer(source='category', read_only=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Tag.objects.all(),
+        required=False
+    )
 
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = [
+            'id', 'title', 'description', 'price', 'quantity', 'stock',
+            'sku', 'image', 'status', 'category', 'category_details',
+            'tags', 'slug', 'created_at', 'updated_at'  # Add other fields if applicable
+        ]
         extra_kwargs = {
             'image': {'required': False, 'allow_null': True},
             'slug': {'required': False}
@@ -28,6 +40,7 @@ class ProductSerializer(serializers.ModelSerializer):
             return float(value)
         except (TypeError, ValueError):
             raise serializers.ValidationError("Price must be a number")
+
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
