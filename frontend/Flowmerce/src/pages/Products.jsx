@@ -156,11 +156,18 @@ const Products = () => {
             <tr key={prod.id} className="hover:bg-gray-50">
               <td className="py-3 flex items-center gap-3">
                 {prod.image && (
-                  <img src={prod.image} alt={prod.title} className="w-10 h-10 rounded" />
-                )}
+  <img
+    src={prod.image}
+    alt={prod.title}
+    className="w-10 h-10 rounded object-cover"
+    onError={(e) => {
+      e.target.style.display = 'none'; // hide broken image icons
+    }}
+  />
+)}
                 {prod.title}
               </td>
-              <td>{prod.category?.title || "Uncategorized"}</td>
+              <td>{prod.category_details?.title || "Uncategorized"}</td>
               <td>
                 <span className={`px-2 py-1 rounded-full text-sm ${statusColors[prod.status] || 'bg-gray-100'}`}>
                   {prod.status === 'available' ? 'In Stock' : 
