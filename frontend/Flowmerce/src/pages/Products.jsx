@@ -178,10 +178,11 @@ const Products = () => {
               <td>{prod.stock}</td>
               <td>KSh. {prod.price?.toFixed(2) || '0.00'}</td>
               <td className="flex gap-2">
-                <Pencil
-                  className="w-4 h-4 text-blue-600 cursor-pointer"
-                  onClick={() => setEditingProduct(prod)}
-                />
+                <Link to={`/editproduct/${prod.id}`}>
+                  <Pencil
+                    className="w-4 h-4 text-blue-600 cursor-pointer"
+                  />
+                </Link>
                 <Trash2
                   className="w-4 h-4 text-red-600 cursor-pointer"
                   onClick={() => handleDelete(prod.id)}
