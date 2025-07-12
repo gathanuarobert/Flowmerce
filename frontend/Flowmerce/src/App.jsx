@@ -10,6 +10,7 @@ import Reports from './pages/Reports'
 import Login from './components/Login'
 import Register from './components/Register'
 import AddProduct from './components/AddProduct'
+import EditProduct from './components/EditProduct'
 
 const useAuthCheck = () => {
   useEffect(() => {
@@ -38,6 +39,7 @@ const App = () => {
           <Route path='login' element={<Login />} />
           <Route path='register' element={<Register />} />
           <Route path='addproducts' element={<AddProduct />} />
+          <Route path='editproduct/:id' element={<EditProduct />} />
         </Route>
       </Routes>
     </BrowserRouter>
