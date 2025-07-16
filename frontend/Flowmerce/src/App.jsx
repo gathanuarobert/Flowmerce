@@ -11,6 +11,7 @@ import Login from './components/Login'
 import Register from './components/Register'
 import AddProduct from './components/AddProduct'
 import EditProduct from './components/EditProduct'
+import CreateOrder from './components/CreateOrder'
 
 const useAuthCheck = () => {
   useEffect(() => {
@@ -40,6 +41,7 @@ const App = () => {
           <Route path='register' element={<Register />} />
           <Route path='addproducts' element={<AddProduct />} />
           <Route path='editproduct/:id' element={<EditProduct />} />
+          <Route path='createorder' element={<CreateOrder />} />
         </Route>
       </Routes>
     </BrowserRouter>
