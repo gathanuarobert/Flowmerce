@@ -62,7 +62,7 @@ const EditProduct = () => {
       try {
         const [tagsRes, productRes] = await Promise.all([
           api.get("tags/"),
-          api.get(`products/${id}/`)
+          api.get(`products/${id}/`),
         ]);
 
         const tagsData = Array.isArray(tagsRes.data)
@@ -80,7 +80,7 @@ const EditProduct = () => {
           quantity: prod.quantity || 0,
           stock: prod.stock || 0,
           sku: prod.sku || "",
-          tags: Array.isArray(prod.tags) ? prod.tags.map(t => t.id || t) : [],
+          tags: Array.isArray(prod.tags) ? prod.tags.map((t) => t.id || t) : [],
           status: prod.status || "available",
         });
 
@@ -153,6 +153,13 @@ const EditProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    if (!productData.category && !customCategory.trim()) {
+      setError("Please select or enter a category.");
+      setIsLoading(false);
+      return;
+    }
+
     setError(null);
 
     try {
@@ -180,7 +187,13 @@ const EditProduct = () => {
         formData.append("image", productData.image);
       }
 
-      formData.append("tags", JSON.stringify(productData.tags));
+      productData.tags.forEach((tag) => {
+        formData.append("tags", tag);
+      });
+
+      for (let pair of formData.entries()) {
+        console.log(`${pair[0]}:`, pair[1]);
+      }
 
       const response = await api.patch(`products/${id}/`, formData, {
         headers: {
@@ -194,10 +207,10 @@ const EditProduct = () => {
       console.error("Error updating product:", err);
       setError(
         err.response?.data ||
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to update product."
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to update product."
       );
     } finally {
       setIsLoading(false);
@@ -217,18 +230,44 @@ const EditProduct = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Product Title*</label>
-            <input type="text" name="title" value={productData.title} onChange={handleChange} required className={inputClasses} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Title*
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={productData.title}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">SKU*</label>
-            <input type="text" name="sku" value={productData.sku} onChange={handleChange} required className={inputClasses} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              SKU*
+            </label>
+            <input
+              type="text"
+              name="sku"
+              value={productData.sku}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select name="category" value={productData.category} onChange={handleCategoryChange} className={selectClasses} disabled={isFetching}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              name="category"
+              value={productData.category}
+              onChange={handleCategoryChange}
+              className={selectClasses}
+              disabled={isFetching}
+            >
               <option value="">Select a category (optional)</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -239,47 +278,110 @@ const EditProduct = () => {
 
             {showCustomCategory && (
               <div className="mt-2">
-                <input type="text" name="customCategory" placeholder="Enter your custom category" value={customCategory} onChange={handleCustomCategoryChange} className={inputClasses} />
+                <input
+                  type="text"
+                  name="customCategory"
+                  placeholder="Enter your custom category"
+                  value={customCategory}
+                  onChange={handleCustomCategoryChange}
+                  className={inputClasses}
+                />
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price*</label>
-            <input type="number" name="price" min="0.01" step="0.01" value={productData.price} onChange={handleChange} required className={inputClasses} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Price*
+            </label>
+            <input
+              type="number"
+              name="price"
+              min="0.01"
+              step="0.01"
+              value={productData.price}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity*</label>
-            <input type="number" name="quantity" min="0" value={productData.quantity} onChange={handleChange} required className={inputClasses} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Quantity*
+            </label>
+            <input
+              type="number"
+              name="quantity"
+              min="0"
+              value={productData.quantity}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Stock*</label>
-            <input type="number" name="stock" min="0" value={productData.stock} onChange={handleChange} required className={inputClasses} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Stock*
+            </label>
+            <input
+              type="number"
+              name="stock"
+              min="0"
+              value={productData.stock}
+              onChange={handleChange}
+              required
+              className={inputClasses}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status*</label>
-            <select name="status" value={productData.status} onChange={handleChange} required className={selectClasses}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status*
+            </label>
+            <select
+              name="status"
+              value={productData.status}
+              onChange={handleChange}
+              required
+              className={selectClasses}
+            >
               <option value="available">Available</option>
               <option value="out_of_stock">Out of Stock</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
-            <input type="file" accept="image/*" onChange={handleFileChange} className={fileInputClasses} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className={fileInputClasses}
+            />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea name="description" value={productData.description} onChange={handleChange} rows={4} className={textareaClasses} />
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
+          <textarea
+            name="description"
+            value={productData.description}
+            onChange={handleChange}
+            rows={4}
+            className={textareaClasses}
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tags
+          </label>
           {isFetching ? (
             <div className="text-gray-500">Loading tags...</div>
           ) : (
@@ -302,10 +404,22 @@ const EditProduct = () => {
         </div>
 
         <div className="flex justify-end gap-4 pt-4">
-          <button type="button" onClick={() => navigate("/products")} className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+          <button
+            type="button"
+            onClick={() => navigate("/products")}
+            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={isLoading || isFetching} className={`px-6 py-2 rounded-lg text-white transition-colors ${isLoading || isFetching ? "bg-[#ff5c00]/70" : "bg-[#ff5c00] hover:bg-[#e65100]"}`}>
+          <button
+            type="submit"
+            disabled={isLoading || isFetching}
+            className={`px-6 py-2 rounded-lg text-white transition-colors ${
+              isLoading || isFetching
+                ? "bg-[#ff5c00]/70"
+                : "bg-[#ff5c00] hover:bg-[#e65100]"
+            }`}
+          >
             {isLoading ? "Saving..." : "Update Product"}
           </button>
         </div>
