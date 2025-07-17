@@ -1,56 +1,95 @@
 import React, { useState } from 'react';
-import { IoIosArrowBack } from "react-icons/io";
+import { IoIosArrowBack } from 'react-icons/io';
 import { Link } from 'react-router-dom';
+
 const PRIMARY_COLOR = '#ff5c00';
 
+const inputClasses =
+  "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 w-full";
+const selectClasses = inputClasses;
+const tableInputClasses =
+  "bg-[#F49CAC]/30 px-2 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 w-full text-sm";
+
+const STATUS_OPTIONS = ['Pending', 'Completed', 'Cancelled'];
+
 function CreateOrder() {
-  const [form, setForm] = useState({
+  const [customer, setCustomer] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    orderType: 'Manual',
-    orderState: 'Processing',
-    paymentStatus: 'Paid',
-    orderDate: '',
-    productName: 'Macbook M3 PRO',
-    sku: 'MPM3P-M3451-31',
-    warranty: '1 Year',
-    quantity: '1',
-    price: '2599',
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  // Each order item matches OrderItem model
+  const [orderItems, setOrderItems] = useState([
+    {
+      productTitle: 'Macbook M3 PRO',
+      sku: 'MPM3P-M3451-31',
+      quantity: 1,
+      productPrice: 2599,
+      warranty: '1 Year',
+    },
+  ]);
+
+  const [orderDate, setOrderDate] = useState('');
+  const [status, setStatus] = useState('Pending');
+
+  // Handlers for customer info
+  const onCustomerChange = (e) => {
+    setCustomer((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const totalAmount = parseFloat(form.quantity || 0) * parseFloat(form.price || 0);
+  // Handlers for order items
+  const updateOrderItem = (index, field, value) => {
+    setOrderItems((prev) => {
+      const newItems = [...prev];
+      newItems[index][field] = field === 'quantity' || field === 'productPrice' ? Number(value) : value;
+      return newItems;
+    });
+  };
+
+  const addOrderItem = () => {
+    setOrderItems((prev) => [
+      ...prev,
+      { productTitle: '', sku: '', quantity: 1, productPrice: 0, warranty: '' },
+    ]);
+  };
+
+  const removeOrderItem = (index) => {
+    setOrderItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Calculate total amount for all items
+  const totalAmount = orderItems.reduce(
+    (sum, item) => sum + Number(item.productPrice) * Number(item.quantity),
+    0
+  );
 
   return (
-    <div className="flex justify-center items-start min-h-screen py-5">
-      <div className="w-full max-w-5xl rounded-2xl bg-white shadow px-10 py-8 border border-gray-100">
+    <div className="flex justify-center py-10 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 w-full max-w-6xl p-8">
         {/* Back Link */}
-        <Link to="/orders">
-          <div className="mb-6 flex items-center space-x-2 text-sm text-gray-500 cursor-pointer hover:text-orange-500 transition">
-            <IoIosArrowBack className="text-lg" />
-            <span>Back to orders</span>
-          </div>
+        <Link
+          to="/orders"
+          className="flex items-center text-gray-500 text-sm mb-6 hover:text-orange-500 transition"
+        >
+          <IoIosArrowBack className="mr-1 text-lg" />
+          Back to orders
         </Link>
 
-        {/* Header & Actions */}
-        <div className="flex justify-between items-center mb-7">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-semibold text-gray-800">Add New Order</h1>
           <div className="space-x-2">
-            <button className="px-5 py-2 bg-gray-50 text-gray-500 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-100 transition">
+            <button className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
               Cancel
             </button>
             <button
-              className="px-5 py-2 rounded-lg text-sm font-semibold transition"
+              className="px-5 py-2 rounded-md text-sm font-semibold"
               style={{
                 backgroundColor: PRIMARY_COLOR,
                 color: '#fff',
-                boxShadow: '0 2px 8px rgba(255,92,0,0.08)',
+                boxShadow: '0 2px 8px rgba(255,92,0,0.15)',
               }}
             >
               Save Order
@@ -59,24 +98,26 @@ function CreateOrder() {
         </div>
 
         {/* Customer Details */}
-        <section className="mb-8">
-          <h2 className="mb-4 font-medium text-gray-700">Customer Details</h2>
-          <div className="flex flex-wrap gap-5">
+        <section className="mb-10">
+          <h2 className="text-lg font-medium text-gray-700 mb-4">Customer Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { label: 'First Name', name: 'firstName', type: 'text' },
-              { label: 'Last Name', name: 'lastName', type: 'text' },
-              { label: 'E-mail', name: 'email', type: 'email' },
-              { label: 'Phone Number', name: 'phone', type: 'tel' },
-            ].map(({ label, name, type }) => (
-              <div key={name} className="flex-1 min-w-[220px]">
-                <label htmlFor={name} className="block text-sm text-gray-500 mb-1">{label}</label>
+              { label: 'First Name', name: 'firstName', value: customer.firstName },
+              { label: 'Last Name', name: 'lastName', value: customer.lastName },
+              { label: 'E-mail', name: 'email', type: 'email', value: customer.email },
+              { label: 'Phone Number', name: 'phone', type: 'tel', value: customer.phone },
+            ].map(({ label, name, type = 'text', value }) => (
+              <div key={name}>
+                <label htmlFor={name} className="block text-sm text-gray-500 mb-1">
+                  {label}
+                </label>
                 <input
                   id={name}
-                  type={type}
                   name={name}
-                  value={form[name]}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  type={type}
+                  value={value}
+                  onChange={onCustomerChange}
+                  className={inputClasses}
                 />
               </div>
             ))}
@@ -84,155 +125,141 @@ function CreateOrder() {
         </section>
 
         {/* Order Details */}
-        <section className="mb-8">
-          <h2 className="mb-4 font-medium text-gray-700">Order Details</h2>
-          <div className="flex flex-wrap gap-5">
-            {/* Order Type */}
-            <div className="flex-1 min-w-[220px]">
-              <label className="block text-sm text-gray-500 mb-1">Order Type</label>
-              <div className="flex space-x-6">
-                {['Manual', 'In-store', 'Custom'].map((type) => (
-                  <label key={type} className="flex items-center gap-2 text-gray-700 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="orderType"
-                      value={type}
-                      checked={form.orderType === type}
-                      onChange={handleChange}
-                      style={{ accentColor: PRIMARY_COLOR }}
-                    />
-                    {type}
-                  </label>
+        <section className="mb-10">
+          <h2 className="text-lg font-medium text-gray-700 mb-4">Order Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-lg">
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Order Status</label>
+              <select
+                name="status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className={selectClasses}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
-
-            {/* Dropdowns */}
-            {[
-              {
-                label: 'Order State',
-                name: 'orderState',
-                options: ['Processing', 'Completed', 'Pending'],
-              },
-              {
-                label: 'Payment Status',
-                name: 'paymentStatus',
-                options: ['Paid', 'Pending', 'Failed'],
-              },
-            ].map(({ label, name, options }) => (
-              <div key={name} className="flex-1 min-w-[220px]">
-                <label htmlFor={name} className="block text-sm text-gray-500 mb-1">{label}</label>
-                <select
-                  id={name}
-                  name={name}
-                  value={form[name]}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                >
-                  {options.map((option) => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-            ))}
-
-            {/* Order Date */}
-            <div className="flex-1 min-w-[180px]">
-              <label htmlFor="orderDate" className="block text-sm text-gray-500 mb-1">Order Date</label>
+            <div>
+              <label htmlFor="orderDate" className="block text-sm text-gray-500 mb-1">
+                Order Date
+              </label>
               <input
-                id="orderDate"
                 type="date"
+                id="orderDate"
                 name="orderDate"
-                value={form.orderDate}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
+                className={inputClasses}
               />
             </div>
           </div>
         </section>
 
-        {/* Tabs (Static) */}
-        <div className="mb-2 border-b border-gray-200">
-          <button className="px-3 pb-2 border-b-2 font-medium text-gray-900" style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}>
-            Product Items
-          </button>
-          <button className="px-3 pb-2 text-gray-400 font-normal cursor-not-allowed">Delivery Info</button>
-          <button className="px-3 pb-2 text-gray-400 font-normal cursor-not-allowed">Others</button>
-        </div>
+        {/* Product Items Table */}
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-700">Product Items</h2>
+            <button
+              className="text-sm font-medium text-orange-600 hover:bg-orange-50 px-3 py-1 rounded transition"
+              onClick={addOrderItem}
+              type="button"
+            >
+              + Add Item
+            </button>
+          </div>
 
-        {/* Product Table */}
-        <div className="overflow-x-auto mb-8">
-          <table className="w-full text-left min-w-[600px]">
-            <thead>
-              <tr className="text-xs text-gray-500 bg-gray-50">
-                <th className="py-3 px-2">Product</th>
-                <th className="py-3 px-2">SKU</th>
-                <th className="py-3 px-2">Warranty</th>
-                <th className="py-3 px-2">Quantity</th>
-                <th className="py-3 px-2">Price</th>
-                <th className="py-3 px-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                {[
-                  { name: 'productName', value: form.productName },
-                  { name: 'sku', value: form.sku },
-                  { name: 'warranty', value: form.warranty },
-                ].map(({ name, value }) => (
-                  <td key={name} className="py-2 px-2">
-                    <input
-                      type="text"
-                      name={name}
-                      value={value}
-                      onChange={handleChange}
-                      className="rounded-md border border-gray-200 px-2 py-1 w-full text-gray-700"
-                    />
-                  </td>
-                ))}
-                <td className="py-2 px-2">
-                  <input
-                    type="number"
-                    name="quantity"
-                    min="1"
-                    value={form.quantity}
-                    onChange={handleChange}
-                    className="rounded-md border border-gray-200 px-2 py-1 w-20 text-gray-700"
-                  />
-                </td>
-                <td className="py-2 px-2">
-                  <input
-                    type="number"
-                    name="price"
-                    step="0.01"
-                    value={form.price}
-                    onChange={handleChange}
-                    className="rounded-md border border-gray-200 px-2 py-1 w-24 text-gray-700"
-                  />
-                </td>
-                <td></td>
-              </tr>
-              <tr>
-                <td colSpan={6} className="pt-2 text-left">
-                  <button
-                    className="text-sm font-medium py-1 px-2 rounded hover:bg-orange-50 transition"
-                    style={{ color: PRIMARY_COLOR }}
-                  >
-                    + Add another item
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="overflow-x-auto mb-6">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead className="bg-gray-50 text-gray-500">
+                <tr>
+                  <th className="py-2 px-2 border border-gray-200">Product Title</th>
+                  <th className="py-2 px-2 border border-gray-200">SKU</th>
+                  <th className="py-2 px-2 border border-gray-200">Warranty</th>
+                  <th className="py-2 px-2 border border-gray-200">Quantity</th>
+                  <th className="py-2 px-2 border border-gray-200">Price</th>
+                  <th className="py-2 px-2 border border-gray-200">Amount</th>
+                  <th className="py-2 px-2 border border-gray-200">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderItems.map((item, idx) => {
+                  const amount = item.productPrice * item.quantity;
+                  return (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="py-2 px-2 border border-gray-200">
+                        <input
+                          className={tableInputClasses}
+                          value={item.productTitle}
+                          onChange={(e) => updateOrderItem(idx, 'productTitle', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-2 px-2 border border-gray-200">
+                        <input
+                          className={tableInputClasses}
+                          value={item.sku}
+                          onChange={(e) => updateOrderItem(idx, 'sku', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-2 px-2 border border-gray-200">
+                        <input
+                          className={tableInputClasses}
+                          value={item.warranty}
+                          onChange={(e) => updateOrderItem(idx, 'warranty', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-2 px-2 border border-gray-200">
+                        <input
+                          type="number"
+                          min="1"
+                          className={tableInputClasses}
+                          value={item.quantity}
+                          onChange={(e) => updateOrderItem(idx, 'quantity', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-2 px-2 border border-gray-200">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className={tableInputClasses}
+                          value={item.productPrice}
+                          onChange={(e) => updateOrderItem(idx, 'productPrice', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-2 px-2 border border-gray-200 font-semibold">
+                        ${amount.toFixed(2)}
+                      </td>
+                      <td className="py-2 px-2 border border-gray-200 text-center">
+                        <button
+                          className="text-red-600 hover:text-red-800 font-semibold"
+                          onClick={() => removeOrderItem(idx)}
+                          type="button"
+                          aria-label="Remove item"
+                        >
+                          &times;
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-          {/* Total Price */}
-          <div className="flex justify-end pr-4 mt-2">
-            <span className="text-gray-500 text-sm">Total:</span>
-            <span className="ml-2 text-base font-bold" style={{ color: PRIMARY_COLOR }}>
+          <div className="flex justify-end items-center border-t border-gray-200 pt-3">
+            <span className="mr-4 text-gray-600 font-semibold">Total:</span>
+            <span
+              className="text-lg font-bold"
+              style={{ color: PRIMARY_COLOR }}
+            >
               ${totalAmount.toFixed(2)}
             </span>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
