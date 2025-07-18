@@ -29,7 +29,7 @@ const Login = () => {
       api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
       
       toast.success('Login successful!');
-      navigate('/products');
+      navigate('/');
     } catch (error) {
       const errorMessage = error.response?.data?.error ||  // Matches your Django error key
                          error.response?.data?.message || 
