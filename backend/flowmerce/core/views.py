@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import parsers, generics
 import logging
 logger = logging.getLogger(__name__)
@@ -104,28 +105,19 @@ class ProductViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-class OrderListView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    pagination_class = CustomPagination
 
-class OrderCreateView(generics.CreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer   
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
 
     def perform_create(self, serializer):
-        serializer.save(employee=self.request.user)
+        # employee set in serializer.create(), so this can stay empty or omitted
+        serializer.save()
 
-class IsOrderOwner(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return obj.employee == request.user
-
-class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAdminUser | IsOrderOwner]
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
