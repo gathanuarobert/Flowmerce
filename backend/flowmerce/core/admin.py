@@ -17,9 +17,9 @@ admin.site.register(Tag)
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('employee', 'product_title', 'quantity', 'status', 'amount', 'order_date')
-    list_filter = ('order_date', 'status', 'product__title')
-    search_fields = ('product__title', 'order_date', 'employee')
+    list_display = ('id', 'employee', 'status', 'amount', 'order_date')
+    list_filter = ('order_date', 'status', 'employee')
+    search_fields = ('employee__email', 'order_date')
 
 admin.site.register(OrderItem) 
 
