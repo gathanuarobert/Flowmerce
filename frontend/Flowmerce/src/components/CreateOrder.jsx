@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { IoIosArrowBack } from 'react-icons/io';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import { toast } from 'react-toastify';
 
 const PRIMARY_COLOR = '#ff5c00';
 
@@ -13,45 +15,85 @@ const tableInputClasses =
 const STATUS_OPTIONS = ['Pending', 'Completed', 'Cancelled'];
 
 function CreateOrder() {
+  const navigate = useNavigate();
+
+  // Removed customer state usage for backend model compatibility
+  /*
   const [customer, setCustomer] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
   });
+  */
 
-  // Each order item matches OrderItem model
   const [orderItems, setOrderItems] = useState([
     {
-      productTitle: 'Macbook M3 PRO',
-      sku: 'MPM3P-M3451-31',
+      productTitle: '',
+      sku: '',
       quantity: 1,
-      productPrice: 2599,
-      warranty: '1 Year',
+      productPrice: 0,
+      warranty: '',
+      productId: null,
+      isLoading: false,
     },
   ]);
 
   const [orderDate, setOrderDate] = useState('');
   const [status, setStatus] = useState('Pending');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handlers for customer info
-  const onCustomerChange = (e) => {
-    setCustomer((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  // Handlers for order items
-  const updateOrderItem = (index, field, value) => {
+  // -- Order items field changes --
+  const updateOrderItem = async (index, field, value) => {
     setOrderItems((prev) => {
       const newItems = [...prev];
       newItems[index][field] = field === 'quantity' || field === 'productPrice' ? Number(value) : value;
+      if ((field === 'sku' || field === 'productTitle') && value.length > 2) {
+        newItems[index].isLoading = true;
+      }
       return newItems;
     });
+
+    if ((field === 'sku' || field === 'productTitle') && value.length > 2) {
+      try {
+        const res = await api.get('/products/', { params: { search: value } });
+        const found = Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : null;
+
+        if (found) {
+          setOrderItems((prev) => {
+            const newItems = [...prev];
+            newItems[index] = {
+              ...newItems[index],
+              productId: found.id,
+              productTitle: found.title,
+              sku: found.sku,
+              warranty: found.warranty || '',
+              productPrice: found.price || 0,
+              isLoading: false,
+            };
+            return newItems;
+          });
+        } else {
+          setOrderItems((prev) => {
+            const newItems = [...prev];
+            newItems[index].isLoading = false;
+            return newItems;
+          });
+        }
+      } catch (err) {
+        setOrderItems((prev) => {
+          const newItems = [...prev];
+          newItems[index].isLoading = false;
+          return newItems;
+        });
+      }
+    }
   };
 
   const addOrderItem = () => {
     setOrderItems((prev) => [
       ...prev,
-      { productTitle: '', sku: '', quantity: 1, productPrice: 0, warranty: '' },
+      { productTitle: '', sku: '', quantity: 1, productPrice: 0, warranty: '', productId: null, isLoading: false },
     ]);
   };
 
@@ -59,7 +101,39 @@ function CreateOrder() {
     setOrderItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Calculate total amount for all items
+  // ---- Handle Save Order ----
+  const handleSaveOrder = async () => {
+    setIsSubmitting(true);
+    try {
+      // Build payload with only supported fields
+      const payload = {
+      status,
+      order_date: orderDate,
+      items: orderItems
+        .filter(item => item.productId)  // only items where product is selected
+        .map(item => ({
+          product: item.productId,
+          quantity: item.quantity,
+          price: item.productPrice,
+        })),
+    };
+    
+
+      const response = await api.post('/orders/', payload);
+
+      toast.success('Order created!');
+      navigate('/orders');
+    } catch (error) {
+      if (error.response && error.response.data) {
+        console.error('Validation errors:', error.response.data);
+        toast.error(`Failed to create order: ${JSON.stringify(error.response.data)}`);
+      } else {
+        toast.error('Failed to create order.');
+      }
+    }
+    setIsSubmitting(false);
+  };
+
   const totalAmount = orderItems.reduce(
     (sum, item) => sum + Number(item.productPrice) * Number(item.quantity),
     0
@@ -68,7 +142,6 @@ function CreateOrder() {
   return (
     <div className="flex justify-center py-10 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-xl shadow-md border border-gray-100 w-full max-w-6xl p-8">
-        {/* Back Link */}
         <Link
           to="/orders"
           className="flex items-center text-gray-500 text-sm mb-6 hover:text-orange-500 transition"
@@ -77,7 +150,6 @@ function CreateOrder() {
           Back to orders
         </Link>
 
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-semibold text-gray-800">Add New Order</h1>
           <div className="space-x-2">
@@ -85,46 +157,20 @@ function CreateOrder() {
               Cancel
             </button>
             <button
-              className="px-5 py-2 rounded-md text-sm font-semibold"
+              disabled={isSubmitting}
+              className={`px-5 py-2 rounded-md text-sm font-semibold ${isSubmitting ? 'opacity-50 cursor-wait' : ''}`}
               style={{
                 backgroundColor: PRIMARY_COLOR,
                 color: '#fff',
                 boxShadow: '0 2px 8px rgba(255,92,0,0.15)',
               }}
+              onClick={handleSaveOrder}
             >
-              Save Order
+              {isSubmitting ? 'Saving...' : 'Save Order'}
             </button>
           </div>
         </div>
 
-        {/* Customer Details */}
-        <section className="mb-10">
-          <h2 className="text-lg font-medium text-gray-700 mb-4">Customer Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { label: 'First Name', name: 'firstName', value: customer.firstName },
-              { label: 'Last Name', name: 'lastName', value: customer.lastName },
-              { label: 'E-mail', name: 'email', type: 'email', value: customer.email },
-              { label: 'Phone Number', name: 'phone', type: 'tel', value: customer.phone },
-            ].map(({ label, name, type = 'text', value }) => (
-              <div key={name}>
-                <label htmlFor={name} className="block text-sm text-gray-500 mb-1">
-                  {label}
-                </label>
-                <input
-                  id={name}
-                  name={name}
-                  type={type}
-                  value={value}
-                  onChange={onCustomerChange}
-                  className={inputClasses}
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Order Details */}
         <section className="mb-10">
           <h2 className="text-lg font-medium text-gray-700 mb-4">Order Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-lg">
@@ -159,7 +205,6 @@ function CreateOrder() {
           </div>
         </section>
 
-        {/* Product Items Table */}
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-medium text-gray-700">Product Items</h2>
@@ -195,20 +240,28 @@ function CreateOrder() {
                           className={tableInputClasses}
                           value={item.productTitle}
                           onChange={(e) => updateOrderItem(idx, 'productTitle', e.target.value)}
+                          placeholder="Type product name"
+                          list={`product-title-list-${idx}`}
+                          autoComplete="off"
                         />
+                        {item.isLoading && <span className="text-xs text-gray-400 ml-1">Loading...</span>}
                       </td>
                       <td className="py-2 px-2 border border-gray-200">
                         <input
                           className={tableInputClasses}
                           value={item.sku}
                           onChange={(e) => updateOrderItem(idx, 'sku', e.target.value)}
+                          placeholder="Type SKU"
+                          autoComplete="off"
                         />
+                        {item.isLoading && <span className="text-xs text-gray-400 ml-1">Loading...</span>}
                       </td>
                       <td className="py-2 px-2 border border-gray-200">
                         <input
                           className={tableInputClasses}
                           value={item.warranty}
                           onChange={(e) => updateOrderItem(idx, 'warranty', e.target.value)}
+                          placeholder="Warranty"
                         />
                       </td>
                       <td className="py-2 px-2 border border-gray-200">
@@ -252,10 +305,7 @@ function CreateOrder() {
 
           <div className="flex justify-end items-center border-t border-gray-200 pt-3">
             <span className="mr-4 text-gray-600 font-semibold">Total:</span>
-            <span
-              className="text-lg font-bold"
-              style={{ color: PRIMARY_COLOR }}
-            >
+            <span className="text-lg font-bold" style={{ color: PRIMARY_COLOR }}>
               ${totalAmount.toFixed(2)}
             </span>
           </div>
