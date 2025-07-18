@@ -44,37 +44,33 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    # If needed, include read-only product details for responses
     product_title = serializers.CharField(source='product.title', read_only=True)
     product_price = serializers.DecimalField(source='product.price', read_only=True, max_digits=10, decimal_places=2)
-    product_image = serializers.ImageField(source='product.image', read_only=True)
-    order_id = serializers.IntegerField(source='order.id', read_only=True)
-    quantity = serializers.IntegerField(default=1)
-    price = serializers.DecimalField(read_only=True, max_digits=10, decimal_places=2)
-
-    def validate_quantity(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Quantity must be greater than zero.")
-        return value
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'order_id', 'product', 'product_title', 'product_price', 'product_image', 'quantity', 'price']
-        extra_kwargs = {
-            'product': {'write_only': True}
-        }  
+        fields = ['id', 'product', 'product_title', 'product_price', 'quantity', 'price']
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
+    items = OrderItemSerializer(many=True, write_only=True)
     employee_email = serializers.CharField(source='employee.email', read_only=True)
     amount = serializers.DecimalField(read_only=True, max_digits=10, decimal_places=2)
-    status = serializers.ChoiceField(choices=Order.STATUS_CHOICES, default='pending')
 
     class Meta:
         model = Order
-        fields = ['id','employee', 'employee_email', 'amount', 'status', 'items']
-        extra_kwargs = {
-            'employee': {'write_only': True}
-        }
+        fields = ['id', 'employee_email', 'amount', 'status', 'order_date', 'items']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        user = self.context['request'].user  # make sure 'request' is passed to serializer context
+        order = Order.objects.create(employee=user, **validated_data)
+
+        for item_data in items_data:
+            # Ensure mandatory fields exist in item_data: product, quantity, price
+            OrderItem.objects.create(order=order, **item_data)
+
+        return order
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
