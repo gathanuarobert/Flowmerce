@@ -100,11 +100,7 @@ class Tag(models.Model):
 
 class Order(models.Model):
     employee = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
-    product_title = models.CharField(max_length=255)
-    product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
     number = models.IntegerField(null=True, blank= True, unique=True, help_text="Human-readable order number")
-    product_price = models.PositiveIntegerField(default=0)
-    quantity = models.PositiveIntegerField(default=0)
     amount = models.PositiveIntegerField(default=0)
     PENDING = 'Pending'
     COMPLETED = 'Completed'
@@ -127,14 +123,17 @@ class Order(models.Model):
     def employee_email(self):
         return self.employee.email
     
-    def save (self, *args, **kwargs):
-        if self.product and self.quantity:
-           self.amount = self.quantity * self.product.price 
+    def save(self, *args, **kwargs):
         if not self.number:
-            last_order = Order.objects.order_by('-number').first() 
-            self.number = (last_order.number + 1) if last_order and last_order.number else 1000
+            last_order = Order.objects.order_by('-number').first()
+        self.number = (last_order.number + 1) if last_order and last_order.number else 1000
+        super().save(*args, **kwargs)
+# Now calculate total amount after order is saved
+        self.amount = sum(item.total_price for item in self.items.all())
+        super().save(update_fields=['amount'])
 
-        super().save(*args, **kwargs)   
+
+  
                
     
 class OrderItem(models.Model):
