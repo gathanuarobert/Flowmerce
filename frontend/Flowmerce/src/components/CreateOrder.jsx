@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { IoIosArrowBack } from 'react-icons/io';
-import { Link, useNavigate } from 'react-router-dom';
-import api from '../utils/api';
-import { toast } from 'react-toastify';
+import React, { useState } from "react";
+import { IoIosArrowBack } from "react-icons/io";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../utils/api";
+import { toast } from "react-toastify";
 
-const PRIMARY_COLOR = '#ff5c00';
+const PRIMARY_COLOR = "#ff5c00";
 
 const inputClasses =
   "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 w-full";
@@ -12,74 +12,68 @@ const selectClasses = inputClasses;
 const tableInputClasses =
   "bg-[#F49CAC]/30 px-2 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 w-full text-sm";
 
-const STATUS_OPTIONS = ['Pending', 'Completed', 'Cancelled'];
+const STATUS_OPTIONS = ["Pending", "Completed", "Cancelled"];
 
 function CreateOrder() {
   const navigate = useNavigate();
 
-  // Removed customer state usage for backend model compatibility
-  /*
-  const [customer, setCustomer] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-  });
-  */
-
   const [orderItems, setOrderItems] = useState([
     {
-      productTitle: '',
-      sku: '',
+      productTitle: "",
+      sku: "",
       quantity: 1,
-      productPrice: 0,
-      warranty: '',
+      productPrice: 0, // Changed from empty string to 0
       productId: null,
       isLoading: false,
     },
   ]);
 
-  const [orderDate, setOrderDate] = useState('');
-  const [status, setStatus] = useState('Pending');
+  const [orderDate, setOrderDate] = useState("");
+  const [status, setStatus] = useState("Pending");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // -- Order items field changes --
   const updateOrderItem = async (index, field, value) => {
     setOrderItems((prev) => {
       const newItems = [...prev];
-      newItems[index][field] = field === 'quantity' || field === 'productPrice' ? Number(value) : value;
-      if ((field === 'sku' || field === 'productTitle') && value.length > 2) {
+      newItems[index][field] =
+        field === "quantity" || field === "productPrice"
+          ? Number(value)
+          : value;
+      if ((field === "sku" || field === "productTitle") && value.length > 2) {
         newItems[index].isLoading = true;
       }
       return newItems;
     });
 
-    if ((field === 'sku' || field === 'productTitle') && value.length > 2) {
+    if ((field === "sku" || field === "productTitle") && value.length > 2) {
       try {
-        const res = await api.get('/products/', { params: { search: value } });
-        const found = Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : null;
+        const res = await api.get("/products/", { params: { search: value } });
+        const found = Array.isArray(res.data) ? res.data[0] : null;
 
-        if (found) {
-          setOrderItems((prev) => {
-            const newItems = [...prev];
+        setOrderItems((prev) => {
+          const newItems = [...prev];
+          if (found) {
             newItems[index] = {
               ...newItems[index],
               productId: found.id,
-              productTitle: found.title,
-              sku: found.sku,
-              warranty: found.warranty || '',
-              productPrice: found.price || 0,
+              productTitle: found.title || value,
+              sku: found.sku || "",
+              productPrice: found.price || newItems[index].productPrice || 0,
               isLoading: false,
             };
-            return newItems;
-          });
-        } else {
-          setOrderItems((prev) => {
-            const newItems = [...prev];
-            newItems[index].isLoading = false;
-            return newItems;
-          });
-        }
+          } else {
+            // Keep what user typed even if no match found
+            newItems[index] = {
+              ...newItems[index],
+              productTitle:
+                field === "productTitle" ? value : newItems[index].productTitle,
+              sku: field === "sku" ? value : newItems[index].sku,
+              isLoading: false,
+            };
+          }
+          return newItems;
+        });
       } catch (err) {
         setOrderItems((prev) => {
           const newItems = [...prev];
@@ -93,7 +87,14 @@ function CreateOrder() {
   const addOrderItem = () => {
     setOrderItems((prev) => [
       ...prev,
-      { productTitle: '', sku: '', quantity: 1, productPrice: 0, warranty: '', productId: null, isLoading: false },
+      {
+        productTitle: "",
+        sku: "",
+        quantity: 1,
+        productPrice: 0,
+        productId: null,
+        isLoading: false,
+      },
     ]);
   };
 
@@ -103,36 +104,46 @@ function CreateOrder() {
 
   // ---- Handle Save Order ----
   const handleSaveOrder = async () => {
-    setIsSubmitting(true);
-    try {
-      // Build payload with only supported fields
-      const payload = {
+  const validItems = orderItems.filter(item => 
+    item.productId && item.quantity > 0 && item.productPrice > 0
+  );
+  
+  if (validItems.length === 0) {
+    toast.error('Please add at least one valid product item with quantity and price');
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    const payload = {
       status,
-      order_date: orderDate,
-      items: orderItems
-        .filter(item => item.productId)  // only items where product is selected
-        .map(item => ({
-          product: item.productId,
-          quantity: item.quantity,
-          price: item.productPrice,
-        })),
+      order_date: orderDate ? `${orderDate}T00:00:00Z` : new Date().toISOString(),
+      items: validItems.map(item => ({
+        product: item.productId,
+        quantity: item.quantity,
+        price: item.productPrice,
+      })),
     };
+
+    console.log('Sending payload:', payload); // Debug log
     
-
-      const response = await api.post('/orders/', payload);
-
-      toast.success('Order created!');
-      navigate('/orders');
-    } catch (error) {
-      if (error.response && error.response.data) {
-        console.error('Validation errors:', error.response.data);
-        toast.error(`Failed to create order: ${JSON.stringify(error.response.data)}`);
-      } else {
-        toast.error('Failed to create order.');
-      }
+    const response = await api.post('/api/orders/', payload);
+    console.log('Response:', response.data); // Debug log
+    
+    toast.success('Order created successfully!');
+    navigate('/orders');
+  } catch (error) {
+    console.error('Full error:', error); // Debug log
+    if (error.response?.data) {
+      console.error('Backend validation errors:', error.response.data);
+      toast.error(`Order creation failed: ${JSON.stringify(error.response.data)}`);
+    } else {
+      toast.error(`Failed to create order: ${error.message}`);
     }
+  } finally {
     setIsSubmitting(false);
-  };
+  }
+};
 
   const totalAmount = orderItems.reduce(
     (sum, item) => sum + Number(item.productPrice) * Number(item.quantity),
@@ -151,31 +162,39 @@ function CreateOrder() {
         </Link>
 
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-semibold text-gray-800">Add New Order</h1>
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Add New Order
+          </h1>
           <div className="space-x-2">
             <button className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
               Cancel
             </button>
             <button
               disabled={isSubmitting}
-              className={`px-5 py-2 rounded-md text-sm font-semibold ${isSubmitting ? 'opacity-50 cursor-wait' : ''}`}
+              className={`px-5 py-2 rounded-md text-sm font-semibold ${
+                isSubmitting ? "opacity-50 cursor-wait" : ""
+              }`}
               style={{
                 backgroundColor: PRIMARY_COLOR,
-                color: '#fff',
-                boxShadow: '0 2px 8px rgba(255,92,0,0.15)',
+                color: "#fff",
+                boxShadow: "0 2px 8px rgba(255,92,0,0.15)",
               }}
               onClick={handleSaveOrder}
             >
-              {isSubmitting ? 'Saving...' : 'Save Order'}
+              {isSubmitting ? "Saving..." : "Save Order"}
             </button>
           </div>
         </div>
 
         <section className="mb-10">
-          <h2 className="text-lg font-medium text-gray-700 mb-4">Order Details</h2>
+          <h2 className="text-lg font-medium text-gray-700 mb-4">
+            Order Details
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-lg">
             <div>
-              <label className="block text-sm text-gray-500 mb-1">Order Status</label>
+              <label className="block text-sm text-gray-500 mb-1">
+                Order Status
+              </label>
               <select
                 name="status"
                 value={status}
@@ -190,7 +209,10 @@ function CreateOrder() {
               </select>
             </div>
             <div>
-              <label htmlFor="orderDate" className="block text-sm text-gray-500 mb-1">
+              <label
+                htmlFor="orderDate"
+                className="block text-sm text-gray-500 mb-1"
+              >
                 Order Date
               </label>
               <input
@@ -221,9 +243,10 @@ function CreateOrder() {
             <table className="w-full text-sm text-left border-collapse">
               <thead className="bg-gray-50 text-gray-500">
                 <tr>
-                  <th className="py-2 px-2 border border-gray-200">Product Title</th>
+                  <th className="py-2 px-2 border border-gray-200">
+                    Product Title
+                  </th>
                   <th className="py-2 px-2 border border-gray-200">SKU</th>
-                  <th className="py-2 px-2 border border-gray-200">Warranty</th>
                   <th className="py-2 px-2 border border-gray-200">Quantity</th>
                   <th className="py-2 px-2 border border-gray-200">Price</th>
                   <th className="py-2 px-2 border border-gray-200">Amount</th>
@@ -239,38 +262,45 @@ function CreateOrder() {
                         <input
                           className={tableInputClasses}
                           value={item.productTitle}
-                          onChange={(e) => updateOrderItem(idx, 'productTitle', e.target.value)}
+                          onChange={(e) =>
+                            updateOrderItem(idx, "productTitle", e.target.value)
+                          }
                           placeholder="Type product name"
                           list={`product-title-list-${idx}`}
                           autoComplete="off"
                         />
-                        {item.isLoading && <span className="text-xs text-gray-400 ml-1">Loading...</span>}
+                        {item.isLoading && (
+                          <span className="text-xs text-gray-400 ml-1">
+                            Loading...
+                          </span>
+                        )}
                       </td>
                       <td className="py-2 px-2 border border-gray-200">
                         <input
                           className={tableInputClasses}
                           value={item.sku}
-                          onChange={(e) => updateOrderItem(idx, 'sku', e.target.value)}
+                          onChange={(e) =>
+                            updateOrderItem(idx, "sku", e.target.value)
+                          }
                           placeholder="Type SKU"
                           autoComplete="off"
                         />
-                        {item.isLoading && <span className="text-xs text-gray-400 ml-1">Loading...</span>}
+                        {item.isLoading && (
+                          <span className="text-xs text-gray-400 ml-1">
+                            Loading...
+                          </span>
+                        )}
                       </td>
-                      <td className="py-2 px-2 border border-gray-200">
-                        <input
-                          className={tableInputClasses}
-                          value={item.warranty}
-                          onChange={(e) => updateOrderItem(idx, 'warranty', e.target.value)}
-                          placeholder="Warranty"
-                        />
-                      </td>
+
                       <td className="py-2 px-2 border border-gray-200">
                         <input
                           type="number"
                           min="1"
                           className={tableInputClasses}
                           value={item.quantity}
-                          onChange={(e) => updateOrderItem(idx, 'quantity', e.target.value)}
+                          onChange={(e) =>
+                            updateOrderItem(idx, "quantity", e.target.value)
+                          }
                         />
                       </td>
                       <td className="py-2 px-2 border border-gray-200">
@@ -280,7 +310,9 @@ function CreateOrder() {
                           step="0.01"
                           className={tableInputClasses}
                           value={item.productPrice}
-                          onChange={(e) => updateOrderItem(idx, 'productPrice', e.target.value)}
+                          onChange={(e) =>
+                            updateOrderItem(idx, "productPrice", e.target.value)
+                          }
                         />
                       </td>
                       <td className="py-2 px-2 border border-gray-200 font-semibold">
@@ -305,7 +337,10 @@ function CreateOrder() {
 
           <div className="flex justify-end items-center border-t border-gray-200 pt-3">
             <span className="mr-4 text-gray-600 font-semibold">Total:</span>
-            <span className="text-lg font-bold" style={{ color: PRIMARY_COLOR }}>
+            <span
+              className="text-lg font-bold"
+              style={{ color: PRIMARY_COLOR }}
+            >
               ${totalAmount.toFixed(2)}
             </span>
           </div>
