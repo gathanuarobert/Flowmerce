@@ -31,58 +31,61 @@ function CreateOrder() {
   const [orderDate, setOrderDate] = useState("");
   const [status, setStatus] = useState("Pending");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [productSuggestions, setProductSuggestions] = useState([]);
+
 
   // -- Order items field changes --
   const updateOrderItem = async (index, field, value) => {
-    setOrderItems((prev) => {
-      const newItems = [...prev];
-      newItems[index][field] =
-        field === "quantity" || field === "productPrice"
-          ? Number(value)
-          : value;
-      if ((field === "sku" || field === "productTitle") && value.length > 2) {
-        newItems[index].isLoading = true;
-      }
-      return newItems;
-    });
-
+  setOrderItems((prev) => {
+    const newItems = [...prev];
+    newItems[index][field] =
+      field === "quantity" || field === "productPrice" ? Number(value) : value;
     if ((field === "sku" || field === "productTitle") && value.length > 2) {
-      try {
-        const res = await api.get("/products/", { params: { search: value } });
-        const found = Array.isArray(res.data) ? res.data[0] : null;
+      newItems[index].isLoading = true;
+    }
+    return newItems;
+  });
 
-        setOrderItems((prev) => {
-          const newItems = [...prev];
+  if ((field === "sku" || field === "productTitle") && value.length > 2) {
+    try {
+      const res = await api.get("/products/", { params: { search: value } });
+      const found = res.data.results?.[0] || null;
+
+      console.log(`Search result for row ${index}:`, found); // 🟠 Debug log
+
+      setOrderItems((prevItems) => {
+        return prevItems.map((item, i) => {
+          if (i !== index) return item;
+
           if (found) {
-            newItems[index] = {
-              ...newItems[index],
+            return {
+              ...item,
               productId: found.id,
               productTitle: found.title || value,
               sku: found.sku || "",
-              productPrice: found.price || newItems[index].productPrice || 0,
+              productPrice: found.price || 0,
               isLoading: false,
             };
           } else {
-            // Keep what user typed even if no match found
-            newItems[index] = {
-              ...newItems[index],
-              productTitle:
-                field === "productTitle" ? value : newItems[index].productTitle,
-              sku: field === "sku" ? value : newItems[index].sku,
+            // No product found, just update input value and reset loading
+            return {
+              ...item,
               isLoading: false,
             };
           }
-          return newItems;
         });
-      } catch (err) {
-        setOrderItems((prev) => {
-          const newItems = [...prev];
-          newItems[index].isLoading = false;
-          return newItems;
-        });
-      }
+      });
+    } catch (err) {
+      console.error("Product search error:", err);
+      setOrderItems((prevItems) => {
+        const newItems = [...prevItems];
+        newItems[index].isLoading = false;
+        return newItems;
+      });
     }
-  };
+  }
+};
+
 
   const addOrderItem = () => {
     setOrderItems((prev) => [
@@ -104,46 +107,56 @@ function CreateOrder() {
 
   // ---- Handle Save Order ----
   const handleSaveOrder = async () => {
-  const validItems = orderItems.filter(item => 
-    item.productId && item.quantity > 0 && item.productPrice > 0
-  );
-  
-  if (validItems.length === 0) {
-    toast.error('Please add at least one valid product item with quantity and price');
-    return;
-  }
+    console.log("Save button clicked!");
+    console.log("All order items:", orderItems);
+    const validItems = orderItems.filter(
+      (item) => item.productId && item.quantity > 0 && item.productPrice > 0
+    );
 
-  setIsSubmitting(true);
-  try {
-    const payload = {
-      status,
-      order_date: orderDate ? `${orderDate}T00:00:00Z` : new Date().toISOString(),
-      items: validItems.map(item => ({
-        product: item.productId,
-        quantity: item.quantity,
-        price: item.productPrice,
-      })),
-    };
+    console.log("Valid items:", validItems);
 
-    console.log('Sending payload:', payload); // Debug log
-    
-    const response = await api.post('/api/orders/', payload);
-    console.log('Response:', response.data); // Debug log
-    
-    toast.success('Order created successfully!');
-    navigate('/orders');
-  } catch (error) {
-    console.error('Full error:', error); // Debug log
-    if (error.response?.data) {
-      console.error('Backend validation errors:', error.response.data);
-      toast.error(`Order creation failed: ${JSON.stringify(error.response.data)}`);
-    } else {
-      toast.error(`Failed to create order: ${error.message}`);
+    if (validItems.length === 0) {
+      toast.error(
+        "Please add at least one valid product item with quantity and price"
+      );
+      return;
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        status,
+        order_date: orderDate
+          ? `${orderDate}T00:00:00Z`
+          : new Date().toISOString(),
+        items: validItems.map((item) => ({
+          product: item.productId,
+          quantity: item.quantity,
+          price: item.productPrice,
+        })),
+      };
+
+      console.log("Sending payload:", payload); // Debug log
+
+      const response = await api.post("/api/orders/", payload);
+      console.log("Response:", response.data); // Debug log
+
+      toast.success("Order created successfully!");
+      navigate("/orders");
+    } catch (error) {
+      console.error("Full error:", error); // Debug log
+      if (error.response?.data) {
+        console.error("Backend validation errors:", error.response.data);
+        toast.error(
+          `Order creation failed: ${JSON.stringify(error.response.data)}`
+        );
+      } else {
+        toast.error(`Failed to create order: ${error.message}`);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const totalAmount = orderItems.reduce(
     (sum, item) => sum + Number(item.productPrice) * Number(item.quantity),
