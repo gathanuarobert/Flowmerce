@@ -126,11 +126,8 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         if not self.number:
             last_order = Order.objects.order_by('-number').first()
-        self.number = (last_order.number + 1) if last_order and last_order.number else 1000
+            self.number = (last_order.number + 1) if last_order and last_order.number else 1000
         super().save(*args, **kwargs)
-# Now calculate total amount after order is saved
-        self.amount = sum(item.total_price for item in self.items.all())
-        super().save(update_fields=['amount'])
 
 
   
@@ -139,15 +136,23 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, related_name='order_items', on_delete=models.CASCADE)
+
+    # Snapshotted product details
+    product_title = models.CharField(max_length=255, null=True, blank=True)
+    product_price = models.PositiveIntegerField(default=0)
+    product_sku = models.CharField(max_length=255, blank=True, null=True)
+    number = models.PositiveIntegerField(unique=True, editable=False, null=True)
+
     quantity = models.PositiveIntegerField(default=0)
     price = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return f"{self.product.title} x {self.quantity}"
+        return f"{self.product_title} x {self.quantity}"
 
     @property
     def total_price(self):
-        return self.quantity * self.price        
+        return self.quantity * self.price
+     
     
 
 class Profile(models.Model):

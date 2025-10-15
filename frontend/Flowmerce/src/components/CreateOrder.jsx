@@ -25,6 +25,7 @@ function CreateOrder() {
       productPrice: 0, // Changed from empty string to 0
       productId: null,
       isLoading: false,
+      suggestions: [], // 👈 add this
     },
   ]);
 
@@ -33,59 +34,45 @@ function CreateOrder() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [productSuggestions, setProductSuggestions] = useState([]);
 
-
   // -- Order items field changes --
   const updateOrderItem = async (index, field, value) => {
-  setOrderItems((prev) => {
-    const newItems = [...prev];
-    newItems[index][field] =
-      field === "quantity" || field === "productPrice" ? Number(value) : value;
+    setOrderItems((prev) => {
+      const newItems = [...prev];
+      newItems[index][field] =
+        field === "quantity" || field === "productPrice"
+          ? Number(value)
+          : value;
+      if ((field === "sku" || field === "productTitle") && value.length > 2) {
+        newItems[index].isLoading = true;
+      }
+      return newItems;
+    });
+
     if ((field === "sku" || field === "productTitle") && value.length > 2) {
-      newItems[index].isLoading = true;
-    }
-    return newItems;
-  });
+      try {
+        const res = await api.get("/products/", { params: { search: value } });
+        const results = Array.isArray(res.data)
+          ? res.data
+          : res.data.results || [];
 
-  if ((field === "sku" || field === "productTitle") && value.length > 2) {
-    try {
-      const res = await api.get("/products/", { params: { search: value } });
-      const found = res.data.results?.[0] || null;
+        console.log(`Search results for row ${index}:`, results);
 
-      console.log(`Search result for row ${index}:`, found); // 🟠 Debug log
-
-      setOrderItems((prevItems) => {
-        return prevItems.map((item, i) => {
-          if (i !== index) return item;
-
-          if (found) {
-            return {
-              ...item,
-              productId: found.id,
-              productTitle: found.title || value,
-              sku: found.sku || "",
-              productPrice: found.price || 0,
-              isLoading: false,
-            };
-          } else {
-            // No product found, just update input value and reset loading
-            return {
-              ...item,
-              isLoading: false,
-            };
-          }
+        setOrderItems((prevItems) => {
+          const newItems = [...prevItems];
+          newItems[index].suggestions = results;
+          newItems[index].isLoading = false;
+          return newItems;
         });
-      });
-    } catch (err) {
-      console.error("Product search error:", err);
-      setOrderItems((prevItems) => {
-        const newItems = [...prevItems];
-        newItems[index].isLoading = false;
-        return newItems;
-      });
+      } catch (err) {
+        console.error("Product search error:", err);
+        setOrderItems((prevItems) => {
+          const newItems = [...prevItems];
+          newItems[index].isLoading = false;
+          return newItems;
+        });
+      }
     }
-  }
-};
-
+  };
 
   const addOrderItem = () => {
     setOrderItems((prev) => [
@@ -97,6 +84,7 @@ function CreateOrder() {
         productPrice: 0,
         productId: null,
         isLoading: false,
+        suggestions: [], // 👈 add this
       },
     ]);
   };
@@ -132,13 +120,21 @@ function CreateOrder() {
         items: validItems.map((item) => ({
           product: item.productId,
           quantity: item.quantity,
-          price: item.productPrice,
+          product_title: item.productTitle,
+          product_price: item.productPrice,
+          product_sku: item.sku,
+          // price: item.productPrice,
         })),
       };
 
       console.log("Sending payload:", payload); // Debug log
 
-      const response = await api.post("/api/orders/", payload);
+      const response = await api.post("/orders/", payload);
+      console.log(
+        "🧾 Payload sent to backend:",
+        JSON.stringify(payload, null, 2)
+      );
+
       console.log("Response:", response.data); // Debug log
 
       toast.success("Order created successfully!");
@@ -162,6 +158,21 @@ function CreateOrder() {
     (sum, item) => sum + Number(item.productPrice) * Number(item.quantity),
     0
   );
+
+  const handleSelectSuggestion = (index, product) => {
+    setOrderItems((prev) => {
+      const newItems = [...prev];
+      newItems[index] = {
+        ...newItems[index],
+        productId: product.id,
+        productTitle: product.title,
+        sku: product.sku,
+        productPrice: product.price,
+        suggestions: [],
+      };
+      return newItems;
+    });
+  };
 
   return (
     <div className="flex justify-center py-10 bg-gray-50 min-h-screen">
@@ -282,6 +293,28 @@ function CreateOrder() {
                           list={`product-title-list-${idx}`}
                           autoComplete="off"
                         />
+
+                        {item.suggestions.length > 0 && (
+                          <ul className="absolute left-0 right-0 bg-[#F49CAC]/30 backdrop-blur-md border border-[#ff5c00]/30 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto animate-fadeIn z-20">
+                            {item.suggestions.map((product) => (
+                              <li
+                                key={product.id}
+                                onClick={() =>
+                                  handleSelectSuggestion(idx, product)
+                                }
+                                className="px-3 py-2 text-sm text-gray-800 hover:bg-[#ff5c00]/10 hover:text-[#ff5c00] cursor-pointer transition-colors duration-200 rounded-lg"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span>{product.title}</span>
+                                  <span className="text-xs text-gray-600 font-medium">
+                                    Ksh {product.price}
+                                  </span>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
                         {item.isLoading && (
                           <span className="text-xs text-gray-400 ml-1">
                             Loading...
@@ -329,7 +362,7 @@ function CreateOrder() {
                         />
                       </td>
                       <td className="py-2 px-2 border border-gray-200 font-semibold">
-                        ${amount.toFixed(2)}
+                        Ksh{amount.toFixed(2)}
                       </td>
                       <td className="py-2 px-2 border border-gray-200 text-center">
                         <button
@@ -354,7 +387,7 @@ function CreateOrder() {
               className="text-lg font-bold"
               style={{ color: PRIMARY_COLOR }}
             >
-              ${totalAmount.toFixed(2)}
+              Ksh {totalAmount.toFixed(2)}
             </span>
           </div>
         </section>

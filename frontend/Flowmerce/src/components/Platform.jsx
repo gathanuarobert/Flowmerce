@@ -1,42 +1,92 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-
-const stats = [
-  {
-    label: "Products sold",
-    value: 325,
-    change: "+5.2%",
-    direction: "up",
-    color: "green",
-    note: "from last week",
-  },
-  {
-    label: "Orders placed",
-    value: 531,
-    change: "-2.8%",
-    direction: "down",
-    color: "red",
-    note: "from last week",
-  },
-  {
-    label: "Unique customers",
-    value: 225,
-    change: "+4.8%",
-    direction: "up",
-    color: "green",
-    note: "from last week",
-  },
-  {
-    label: "Revenue",
-    value: "$12,540",
-    change: "+6.3%",
-    direction: "up",
-    color: "green",
-    note: "from last week",
-  },
-];
+import api from "../utils/api";
 
 const Platform = () => {
+  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [ordersRes, productsRes] = await Promise.all([
+          api.get("orders/"),
+          api.get("products/"),
+        ]);
+
+        const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+        const products = Array.isArray(productsRes.data) ? productsRes.data : [];
+
+        const totalOrders = orders.length;
+        const totalProductsSold = orders.reduce(
+          (sum, order) =>
+            sum +
+            ((order.items || []).reduce(
+              (subSum, item) => subSum + (item.quantity || 0),
+              0
+            ) || 0),
+          0
+        );
+
+        const totalRevenue = orders.reduce(
+          (sum, order) => sum + (parseFloat(order.amount) || 0),
+          0
+        );
+
+        const uniqueCustomers = new Set(
+          orders.map((order) => order.employee_email)
+        ).size;
+
+        const statsData = [
+          {
+            label: "Products sold",
+            value: totalProductsSold,
+            change: "+5.2%",
+            direction: "up",
+            color: "green",
+            note: "from last week",
+          },
+          {
+            label: "Orders placed",
+            value: totalOrders,
+            change: "-2.8%",
+            direction: "down",
+            color: "red",
+            note: "from last week",
+          },
+          {
+            label: "Unique customers",
+            value: uniqueCustomers,
+            change: "+4.8%",
+            direction: "up",
+            color: "green",
+            note: "from last week",
+          },
+          {
+            label: "Revenue",
+            value: `$${totalRevenue.toLocaleString()}`,
+            change: "+6.3%",
+            direction: "up",
+            color: "green",
+            note: "from last week",
+          },
+        ];
+
+        setStats(statsData);
+      } catch (error) {
+        console.error("Error fetching platform stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return <p className="text-gray-600">Loading stats...</p>;
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {stats.map((stat, idx) => (

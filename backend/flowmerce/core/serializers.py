@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.shortcuts import get_object_or_404
 from .models import User, Product, Order, OrderItem, Category, Tag
 
 class UserSerializer(serializers.ModelSerializer):
@@ -44,33 +45,64 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    # If needed, include read-only product details for responses
+    product_sku = serializers.CharField(required=False)
     product_title = serializers.CharField(source='product.title', read_only=True)
     product_price = serializers.DecimalField(source='product.price', read_only=True, max_digits=10, decimal_places=2)
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_title', 'product_price', 'quantity', 'price']
+        fields = ['id', 'product', 'product_title', 'product_price', 'product_sku', 'quantity', 'price']
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, write_only=True)
+    items = OrderItemSerializer(many=True)
     employee_email = serializers.CharField(source='employee.email', read_only=True)
     amount = serializers.DecimalField(read_only=True, max_digits=10, decimal_places=2)
 
     class Meta:
         model = Order
-        fields = ['id', 'employee_email', 'amount', 'status', 'order_date', 'items']
+        fields = ['id', 'number', 'employee_email', 'amount', 'status', 'order_date', 'items']
 
     def create(self, validated_data):
-        items_data = validated_data.pop('items')
-        user = self.context['request'].user  # make sure 'request' is passed to serializer context
+        items_data = validated_data.pop('items', [])
+        user = self.context['request'].user
+
+        # Create the order
         order = Order.objects.create(employee=user, **validated_data)
+        print(f"✅ Creating order items for: {order.number}")
 
+        # Create the items
         for item_data in items_data:
-            # Ensure mandatory fields exist in item_data: product, quantity, price
-            OrderItem.objects.create(order=order, **item_data)
+            print("➡️ Item data received:", item_data)
+            product_field = item_data.get('product')
 
+            if isinstance(product_field, Product):
+                product = product_field
+            else:
+                product = get_object_or_404(Product, id=product_field)
+
+            item = OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=item_data['quantity'],
+                price=product.price,
+                product_title=product.title,
+                product_price=product.price,
+                product_sku=product.sku
+          )
+
+        print("✅ Created item:", item.id)
+
+        # ✅ Now calculate amount after items exist
+        order.amount = sum(item.total_price for item in order.items.all())
+        order.save(update_fields=['amount'])
+        print(f"💰 Final order amount: {order.amount}")
+
+        print("✅ Finished creating order.")
         return order
+
+
+
+
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
