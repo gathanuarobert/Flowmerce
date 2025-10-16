@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+import os
 from dotenv import load_dotenv
 load_dotenv() 
 
@@ -161,9 +162,11 @@ DATABASES = {
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             'charset': 'utf8mb4',
-        }
+        },
     }
 }
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
    
 
 
