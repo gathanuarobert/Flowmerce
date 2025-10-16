@@ -1,10 +1,14 @@
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
+from django.db.models import Sum, Avg, Count
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import parsers, generics
 import logging
+from django.db.models.functions import TruncMonth
+from datetime import datetime
 logger = logging.getLogger(__name__)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
@@ -152,3 +156,70 @@ def show_all_urls(request):
     
     collect_urls(resolver.url_patterns)
     return JsonResponse({'urls': url_list})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def analytics_summary(request):
+    total_orders = Order.objects.count()
+    total_revenue = Order.objects.aggregate(total=Sum('amount'))['total'] or 0
+    avg_order_value = Order.objects.aggregate(avg=Avg('amount'))['avg'] or 0
+    total_products = Product.objects.count()
+
+    top_products = (
+        OrderItem.objects.values('product__title')
+        .annotate(total_sold=Sum('quantity'))
+        .order_by('-total_sold')[:5]
+    )
+
+    status_counts = (
+        Order.objects.values('status')
+        .annotate(count=Count('status'))
+    )
+
+    return Response({
+        "total_orders": total_orders,
+        "total_revenue": total_revenue,
+        "avg_order_value": avg_order_value,
+        "total_products": total_products,
+        "top_products": top_products,
+        "status_counts": status_counts,
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def monthly_sales(request):
+    from datetime import datetime
+    from django.db.models.functions import TruncMonth
+    from django.db.models import Sum
+
+    year = request.GET.get('year')
+    category_id = request.GET.get('category')
+
+    queryset = Order.objects.all()
+
+    # Filter by year
+    if year:
+        queryset = queryset.filter(created_at__year=year)
+
+    # Filter by category if given
+    if category_id:
+        queryset = queryset.filter(product__category_id=category_id)
+
+    # Aggregate sales
+    sales_data = (
+        queryset
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(total_sales=Sum('amount'))
+        .order_by('month')
+    )
+
+    formatted_data = [
+        {
+            "month": datetime.strftime(item['month'], "%b %Y"),
+            "total_sales": item['total_sales'] or 0
+        }
+        for item in sales_data
+    ]
+
+    return Response(formatted_data)
