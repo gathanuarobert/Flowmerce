@@ -11,8 +11,11 @@ from .views import (
     OrderViewSet,
     CategoryViewSet,
     TagViewSet,
+    analytics_summary,
+    monthly_sales,
     show_all_urls  # Add this
 )
+from .views_ai import FlowmerceAssistantView
 
 router = DefaultRouter()
 router.register(r'products', ProductViewSet)
@@ -21,6 +24,9 @@ router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'tags', TagViewSet, basename='tag')
 
 urlpatterns = [
+    path('assistant/', FlowmerceAssistantView.as_view(), name='flowmerce-assistant'),
+    path('analytics/summary/', analytics_summary, name='analytics-summary'),
+    path('analytics/monthly-sales/', monthly_sales, name='monthly-sales'),
     path('users/', UserListView.as_view(), name='user-list'),
     path('register/', UserRegisterView.as_view(), name='user-register'),
     path('login/', UserLoginAPIView.as_view(), name='user-login'),
