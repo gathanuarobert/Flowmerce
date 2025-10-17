@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Order, Product
-from datetime import datetime, timedelta
+from datetime import timezone
 from django.db.models import Sum, Count
 
 openai.api_key = settings.OPENAI_API_KEY
@@ -15,7 +15,7 @@ class FlowmerceAssistantView(APIView):
         user_message = request.data.get('message', '')
 
         # Basic business data for context
-        today = datetime.now()
+        today = timezone.now()
         month_start = today.replace(day=1)
         month_orders = Order.objects.filter(created_at__gte=month_start)
         monthly_revenue = month_orders.aggregate(total=Sum('amount'))['total'] or 0
