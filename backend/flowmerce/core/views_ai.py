@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Order, Product
-from datetime import timezone
+from django.utils import timezone   # ✅ correct one
 from django.db.models import Sum, Count
 
 openai.api_key = settings.OPENAI_API_KEY
