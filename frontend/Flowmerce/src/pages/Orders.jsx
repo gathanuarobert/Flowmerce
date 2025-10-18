@@ -203,7 +203,7 @@ const Orders = () => {
             <tr className="bg-[#F3F4F6] text-gray-600">
               <th className="py-4 px-4 font-semibold text-xs">Order</th>
               <th className="py-4 px-4 font-semibold text-xs">Date</th>
-              <th className="py-4 px-4 font-semibold text-xs">Customer</th>
+              <th className="py-4 px-4 font-semibold text-xs">Employee</th>
               <th className="py-4 px-4 font-semibold text-xs">Payment</th>
               <th className="py-4 px-4 font-semibold text-xs">Total</th>
               <th className="py-4 px-4 font-semibold text-xs">Fulfillment</th>
