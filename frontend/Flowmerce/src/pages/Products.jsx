@@ -105,13 +105,13 @@ const Products = () => {
           placeholder="Search..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-4 py-2 bg-[#f49cac]/30 rounded-md w-1/3 focus:outline-0 focus:ring-2 focus:ring-amber-600"
+          className="px-4 py-2 bg-[#f49cac]/30 rounded-4xl w-1/3 focus:outline-0 focus:ring-2 focus:ring-amber-600"
         />
         <div className="flex gap-2">
-          <button className="px-4 py-2 rounded-md shadow">Sort</button>
-          <button className="px-4 py-2 rounded-md shadow">Filter</button>
+          <button className="px-4 py-2 rounded-4xl shadow">Sort</button>
+          <button className="px-4 py-2 rounded-4xl shadow">Filter</button>
           <Link to='/addproducts' relative="path">
-            <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-md cursor-pointer">
+            <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-4xl cursor-pointer">
               + Add Product
             </button>
           </Link>

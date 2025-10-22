@@ -7,10 +7,10 @@ import { toast } from "react-toastify";
 const PRIMARY_COLOR = "#ff5c00";
 
 const inputClasses =
-  "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 w-full";
+  "bg-[#F49CAC]/30 px-4 py-2 rounded-4xl focus:outline-none focus:ring-2 focus:ring-amber-600 w-full";
 const selectClasses = inputClasses;
 const tableInputClasses =
-  "bg-[#F49CAC]/30 px-2 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 w-full text-sm";
+  "bg-[#F49CAC]/30 px-2 py-1 rounded-4xl focus:outline-none focus:ring-2 focus:ring-amber-600 w-full text-sm";
 
 const STATUS_OPTIONS = ["Pending", "Completed", "Cancelled"];
 
@@ -190,12 +190,12 @@ function CreateOrder() {
             Add New Order
           </h1>
           <div className="space-x-2">
-            <button className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
+            <button className="px-4 py-2 border border-gray-300 rounded-4xl text-sm text-gray-600 hover:bg-gray-50">
               Cancel
             </button>
             <button
               disabled={isSubmitting}
-              className={`px-5 py-2 rounded-md text-sm font-semibold ${
+              className={`px-5 py-2 rounded-4xl text-sm font-semibold ${
                 isSubmitting ? "opacity-50 cursor-wait" : ""
               }`}
               style={{

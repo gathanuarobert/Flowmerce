@@ -177,10 +177,10 @@ const Users = () => {
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full bg-[#F49CAC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff5c00]"
+            className="pl-10 pr-4 py-2 w-full bg-[#F49CAC]/30 rounded-4xl focus:outline-none focus:ring-2 focus:ring-[#ff5c00]"
           />
         </div>
-        <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-md shadow">
+        <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-4xl shadow">
           Users Applications
         </button>
       </div>

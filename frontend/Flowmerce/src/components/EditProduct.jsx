@@ -47,13 +47,13 @@ const EditProduct = () => {
   ];
 
   const inputClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-4xl focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
   const selectClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-4xl focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
   const textareaClasses =
-    "bg-[#F49CAC]/30 px-4 py-2 rounded-lg focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
+    "bg-[#F49CAC]/30 px-4 py-2 rounded-4xl focus:outline-0 focus:ring-2 focus:ring-amber-600 w-full";
   const fileInputClasses =
-    "file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#F49CAC]/50 file:text-gray-700 hover:file:bg-[#F49CAC]/70 w-full";
+    "file:mr-4 file:py-2 file:px-4 file:rounded-4xl file:border-0 file:bg-[#F49CAC]/50 file:text-gray-700 hover:file:bg-[#F49CAC]/70 w-full";
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -407,14 +407,14 @@ const EditProduct = () => {
           <button
             type="button"
             onClick={() => navigate("/products")}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            className="px-6 py-2 border border-gray-300 rounded-4xl text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isLoading || isFetching}
-            className={`px-6 py-2 rounded-lg text-white transition-colors ${
+            className={`px-6 py-2 rounded-4xl text-white transition-colors ${
               isLoading || isFetching
                 ? "bg-[#ff5c00]/70"
                 : "bg-[#ff5c00] hover:bg-[#e65100]"

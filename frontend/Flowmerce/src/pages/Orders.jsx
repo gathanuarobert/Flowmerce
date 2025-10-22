@@ -170,7 +170,7 @@ const Orders = () => {
           <h1 className="text-2xl font-semibold text-gray-800 mb-1">Orders</h1>
         </div>
         <Link to="/createorder">
-          <button className="flex items-center bg-[#ff5c00] text-white px-6 py-2 rounded-lg font-medium shadow focus:outline-none cursor-pointer">
+          <button className="flex items-center bg-[#ff5c00] text-white px-6 py-2 rounded-4xl font-medium shadow focus:outline-none cursor-pointer">
             <Plus className="mr-2 h-5 w-5" />
             Create order
           </button>
@@ -213,7 +213,7 @@ const Orders = () => {
           <tbody>
             {currentOrders.length > 0 ? (
               currentOrders.map((order) => (
-                <tr key={order.id} className="border-b hover:bg-gray-50">
+                <tr key={order.id} className="hover:bg-gray-50">
                   <td className="py-3 px-4 font-medium text-[#ff5c00]">
                     {order.number || "N/A"}
                   </td>
