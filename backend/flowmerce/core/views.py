@@ -21,6 +21,13 @@ class CustomPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)    
+
 class UserListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()
