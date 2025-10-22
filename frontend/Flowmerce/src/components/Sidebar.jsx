@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LuBox } from "react-icons/lu";
-import { TbBrandGoogleAnalytics, TbReportSearch, TbUsers } from "react-icons/tb";
+import { TbBrandGoogleAnalytics, TbReportSearch, TbUsers, TbDatabase } from "react-icons/tb";
 import { MdInventory, MdShoppingCart } from "react-icons/md";
 
 const Sidebar = () => {
@@ -26,32 +26,37 @@ const Sidebar = () => {
   }, [location.pathname]);
 
   return (
-    <div className="w-16 md:w-56 fixed left-0 top-0 z-10 h-screen pt-8 px-4 bg-white">
-      <div className="">
-        <img src="/logo.jpg" alt="logo" className="w-10 hidden md:flex" />
-        <img src="/logo_mini.jpg" alt="logo" className="w-8 flex md:hidden" />
+    <div className="w-16 md:w-56 fixed left-0 top-0 z-10 h-screen pt-8 px-4 bg-white flex flex-col justify-between shadow-sm">
+      {/* Logo Section */}
+      <div className="flex justify-center md:justify-start items-center mb-8">
+        <TbDatabase className="text-2xl text-[#ff5c00]" />
+        <span className="hidden md:flex ml-2 font-semibold text-[#ff5c00] text-lg">Flowmerce</span>
       </div>
 
-      <ul className="mt-2 space-y-4">
+      {/* Navigation Links */}
+      <ul className="flex-1 space-y-4">
         {SIDEBAR_LINKS.map((link, index) => {
           const isActive = activeLink === index;
           const Icon = link.icon;
           return (
             <li
               key={index}
-              className={`font-medium rounded-4xl py-2 px-5 hover:bg-gray-100 hover:text-amber-700 transition ${
+              className={`font-medium rounded-3xl py-2 px-2 md:px-5 hover:bg-gray-100 hover:text-amber-700 transition ${
                 isActive ? "bg-[#ff5c00] text-white" : ""
               }`}
             >
               <Link
                 to={link.path}
-                className="flex justify-center md:justify-start items-center md:space-x-5"
+                className="flex flex-col md:flex-row justify-center md:justify-start items-center md:space-x-5"
                 onClick={() => setActiveLink(index)}
               >
-                <Icon />
+                {/* Icon — always visible */}
+                <Icon className="text-xl mb-1 md:mb-0" />
+
+                {/* Label — hidden on small screens */}
                 <span
                   className={`text-sm hidden md:flex ${
-                    isActive ? "text-white" : "text-gray-500"
+                    isActive ? "text-white" : "text-gray-600"
                   }`}
                 >
                   {link.name}
@@ -62,9 +67,11 @@ const Sidebar = () => {
         })}
       </ul>
 
-      <div className="w-full absolute bottom-5 left-0 px-4 py-2 cursor-pointer text-center">
-        <p className="flex items-center space-x-2 text-sm text-white py-2 px-5 bg-gradient-to-r from-amber-500 to-[#ff5c00] rounded-full">
-          <span>?</span> <span className="hidden md:flex">Need Help</span>
+      {/* Help Section */}
+      <div className="w-full px-4 py-2 cursor-pointer text-center">
+        <p className="flex flex-col md:flex-row items-center justify-center space-x-0 md:space-x-2 text-sm text-white py-2 px-5 bg-gradient-to-r from-amber-500 to-[#ff5c00] rounded-full">
+          <span>?</span>
+          <span className="hidden md:flex">Need Help</span>
         </p>
       </div>
     </div>

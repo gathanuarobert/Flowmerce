@@ -265,7 +265,7 @@ const Orders = () => {
             <button
               key={i + 1}
               onClick={() => setCurrentPage(i + 1)}
-              className={`mx-1 px-4 py-2 rounded-md ${
+              className={`mx-1 px-4 py-2 rounded-4xl cursor-pointer ${
                 currentPage === i + 1
                   ? "bg-[#ff5c00] text-white"
                   : "bg-gray-200 text-gray-600 hover:bg-gray-300"
