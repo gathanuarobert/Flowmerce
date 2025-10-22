@@ -30,7 +30,7 @@ const Sidebar = () => {
         {SIDEBAR_LINKS.map((link, index) => (
           <li
             key={index}
-            className={`font-medium rounded-md py-2 px-5 hover:bg-gray-100 hover:text-amber-700 ${
+            className={`font-medium rounded-4xl py-2 px-5 hover:bg-gray-100 hover:text-amber-700 ${
               activeLink === index ? "bg-[#ff5c00] text-white" : ""
             }`}
           >
