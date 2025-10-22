@@ -1,36 +1,26 @@
-# views_ai.py
-import openai
-from django.conf import settings
+from django.http import StreamingHttpResponse
+from django.utils import timezone
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Order, Product
-from django.utils import timezone   # ✅ correct one
-from django.db.models import Sum, Count
+from django.db.models import Sum
+from .models import Order
+import requests, json, traceback
 
-openai.api_key = settings.OPENAI_API_KEY
 
 class FlowmerceAssistantView(APIView):
     def post(self, request):
-        import traceback
-
-        print("✅ [AI Assistant] Endpoint hit")
+        print("✅ [AI Assistant] Streaming endpoint hit")
 
         try:
-            user_message = request.data.get('message', '')
+            user_message = request.data.get("message", "")
             print("💬 User message:", user_message)
 
-            # Basic business data for context
+            # --- Business context ---
             today = timezone.now()
-            print("🕒 Current time:", today)
-
             month_start = today.replace(day=1)
             month_orders = Order.objects.filter(created_at__gte=month_start)
-            monthly_revenue = month_orders.aggregate(total=Sum('amount'))['total'] or 0
+            monthly_revenue = month_orders.aggregate(total=Sum("amount"))["total"] or 0
             order_count = month_orders.count()
-            print(f"📊 Orders this month: {order_count}, Revenue: {monthly_revenue}")
 
-            # Summarize data into context
             business_context = (
                 f"This business has made {order_count} orders this month, "
                 f"earning a total of ${monthly_revenue:.2f} in revenue. "
@@ -38,33 +28,62 @@ class FlowmerceAssistantView(APIView):
                 f"and answer general questions clearly and helpfully."
             )
 
-            # Combine user message with context
             prompt = f"""
-            Business Data:
-            {business_context}
+Business Data:
+{business_context}
 
-            User Message:
-            {user_message}
+User Message:
+{user_message}
             """
 
-            print("🧠 Sending prompt to OpenAI...")
+            print("🧠 Sending streaming request to Ollama...")
 
-            response = openai.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful AI business assistant for internal use."},
-                    {"role": "user", "content": prompt}
-                ],
+            payload = {
+                "model": "phi3:mini",  # you can switch models here
+                "prompt": prompt,
+                "stream": True,         # ✅ important for live output
+            }
+
+            # Make streaming request to Ollama
+            ollama_response = requests.post(
+                "http://localhost:11434/api/generate",
+                json=payload,
+                stream=True,
+                timeout=None,  # ⏱️ no timeout for long answers
             )
 
-            print("✅ Response received from OpenAI")
+            def stream_ollama():
+                """Yield tokens from Ollama in real time"""
+                try:
+                    for line in ollama_response.iter_lines():
+                        if not line:
+                            continue
 
-            ai_reply = response.choices[0].message.content.strip()
-            print("🤖 AI reply:", ai_reply)
+                        try:
+                            data = json.loads(line.decode("utf-8"))
+                            chunk = data.get("response", "")
+                            if chunk:
+                                yield chunk
+                        except json.JSONDecodeError:
+                            continue
 
-            return Response({"reply": ai_reply}, status=status.HTTP_200_OK)
+                    print("✅ Stream ended successfully")
+                except Exception as e:
+                    print("❌ Stream error:", e)
+                    traceback.print_exc()
+                    yield "\n\n⚠️ An error occurred while streaming from Ollama."
+
+            # Return streaming HTTP response
+            return StreamingHttpResponse(
+                stream_ollama(),
+                content_type="text/plain; charset=utf-8",
+            )
 
         except Exception as e:
             print("❌ ERROR in FlowmerceAssistantView.post():", e)
             traceback.print_exc()
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return StreamingHttpResponse(
+                f"⚠️ Internal server error: {str(e)}",
+                content_type="text/plain; charset=utf-8",
+                status=500,
+            )
