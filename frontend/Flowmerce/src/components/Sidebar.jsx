@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LuBox } from "react-icons/lu";
-import { TbBrandGoogleAnalytics, TbReportSearch, TbUsers, TbDatabase } from "react-icons/tb";
+import {
+  TbBrandGoogleAnalytics,
+  TbReportSearch,
+  TbUsers,
+  TbDatabase,
+  TbRobot,
+} from "react-icons/tb";
 import { MdInventory, MdShoppingCart } from "react-icons/md";
+import { FiCpu } from "react-icons/fi";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -13,8 +20,13 @@ const Sidebar = () => {
     { id: 2, path: "/users", name: "Users", icon: TbUsers },
     { id: 3, path: "/products", name: "Products", icon: MdInventory },
     { id: 5, path: "/orders", name: "Orders", icon: MdShoppingCart },
-    { id: 4, path: "/analytics", name: "Analytics", icon: TbBrandGoogleAnalytics },
-    { id: 6, path: "/reports", name: "Reports", icon: TbReportSearch },
+    {
+      id: 4,
+      path: "/analytics",
+      name: "Analytics",
+      icon: TbBrandGoogleAnalytics,
+    },
+    { id: 6, path: "/reports", name: "AI Assistant", icon: FiCpu },
   ];
 
   // 🧠 Update active link whenever the URL changes
@@ -30,7 +42,9 @@ const Sidebar = () => {
       {/* Logo Section */}
       <div className="flex justify-center md:justify-start items-center mb-8">
         <TbDatabase className="text-2xl text-[#ff5c00]" />
-        <span className="hidden md:flex ml-2 font-semibold text-[#ff5c00] text-lg">Flowmerce</span>
+        <span className="hidden md:flex ml-2 font-semibold text-[#ff5c00] text-lg">
+          Flowmerce
+        </span>
       </div>
 
       {/* Navigation Links */}
@@ -68,12 +82,17 @@ const Sidebar = () => {
       </ul>
 
       {/* Help Section */}
-      <div className="w-full px-4 py-2 cursor-pointer text-center">
-        <p className="flex flex-col md:flex-row items-center justify-center space-x-0 md:space-x-2 text-sm text-white py-2 px-5 bg-gradient-to-r from-amber-500 to-[#ff5c00] rounded-full">
-          <span>?</span>
-          <span className="hidden md:flex">Need Help</span>
-        </p>
-      </div>
+<div className="w-full mt-auto px-2 md:px-4 py-2">
+  <Link
+    to="/reports"
+    className="flex flex-col md:flex-row items-center justify-center md:justify-start md:space-x-3 py-2 px-2 md:px-5 
+               bg-gradient-to-r from-amber-500 to-[#ff5c00] text-white rounded-4xl font-medium hover:opacity-90 transition"
+  >
+    <span className="text-lg font-bold">?</span>
+    <span className="hidden md:flex text-sm">Need Help?</span>
+  </Link>
+</div>
+
     </div>
   );
 };
