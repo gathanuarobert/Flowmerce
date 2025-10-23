@@ -7,6 +7,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import parsers, generics
 import logging
+import requests
+from django.conf import settings
 from django.db.models.functions import TruncMonth
 from datetime import datetime
 logger = logging.getLogger(__name__)
@@ -15,6 +17,21 @@ from django.contrib.auth import authenticate
 from django.utils.text import slugify
 from .models import User, Product, Order, OrderItem, Category, Tag
 from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer, TagSerializer
+
+def verify_recaptcha(token):
+    """Verify Google reCAPTCHA v2 token with Google's API."""
+    data = {
+        'secret': settings.RECAPTCHA_SECRET_KEY,
+        'response': token,
+    }
+    try:
+        response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data)
+        result = response.json()
+        return result.get('success', False)
+    except Exception as e:
+        logger.error(f"reCAPTCHA verification failed: {e}")
+        return False
+
 
 class CustomPagination(PageNumberPagination):
     page_size = 10
@@ -38,8 +55,20 @@ class UserRegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        # 1️⃣ Get reCAPTCHA token from frontend
+        recaptcha_token = request.data.get('g-recaptcha-response')
+
+        # 2️⃣ Verify with Google
+        if not recaptcha_token or not verify_recaptcha(recaptcha_token):
+            return Response(
+                {'error': 'Invalid reCAPTCHA. Please try again.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3️⃣ Proceed with registration
         email = request.data.get('email')
         password = request.data.get('password')
+
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -49,7 +78,9 @@ class UserRegisterView(APIView):
                 'access': str(token.access_token),
                 'refresh': str(token)
             }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 class UserLoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -195,38 +226,38 @@ def analytics_summary(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def monthly_sales(request):
-    from datetime import datetime
     from django.db.models.functions import TruncMonth
-    from django.db.models import Sum
+    from django.db.models import Sum, Count
 
     year = request.GET.get('year')
-    category_id = request.GET.get('category')
-
     queryset = Order.objects.all()
 
-    # Filter by year
+    # Filter by year if provided
     if year:
         queryset = queryset.filter(created_at__year=year)
 
-    # Filter by category if given
-    if category_id:
-        queryset = queryset.filter(product__category_id=category_id)
-
-    # Aggregate sales
+    # Aggregate both total sales and total orders per month
     sales_data = (
         queryset
         .annotate(month=TruncMonth('created_at'))
         .values('month')
-        .annotate(total_sales=Sum('amount'))
+        .annotate(
+            total_revenue=Sum('amount'),
+            total_orders=Count('id'),
+        )
         .order_by('month')
     )
 
-    formatted_data = [
-        {
-            "month": datetime.strftime(item['month'], "%b %Y"),
-            "total_sales": item['total_sales'] or 0
-        }
-        for item in sales_data
-    ]
+    # Format data for frontend
+    formatted_data = {
+        "months": [],
+        "total_revenue": [],
+        "total_orders": [],
+    }
+
+    for item in sales_data:
+        formatted_data["months"].append(item["month"].strftime("%b %Y"))
+        formatted_data["total_revenue"].append(float(item["total_revenue"] or 0))
+        formatted_data["total_orders"].append(item["total_orders"])
 
     return Response(formatted_data)
