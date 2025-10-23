@@ -14,7 +14,7 @@ import {
 
 const Analytics = () => {
   const [summary, setSummary] = useState(null);
-  const [monthlySales, setMonthlySales] = useState([]);
+  const [monthlySales, setMonthlySales] = useState({ months: [], total_revenue: [], total_orders: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,6 +46,14 @@ const Analytics = () => {
         No analytics data available.
       </div>
     );
+
+  // Combine months and total_revenue arrays into chart-friendly objects
+  const chartData =
+    monthlySales.months?.map((month, index) => ({
+      month,
+      total_revenue: monthlySales.total_revenue[index] || 0,
+      total_orders: monthlySales.total_orders[index] || 0,
+    })) || [];
 
   return (
     <div className="p-6 min-h-screen bg-[#F9FAFB]">
@@ -80,18 +88,18 @@ const Analytics = () => {
         <h2 className="text-lg font-semibold mb-4 text-[#ff5c00]">
           Monthly Sales Trend
         </h2>
-        {monthlySales.length === 0 ? (
+        {chartData.length === 0 ? (
           <p className="text-gray-600">No sales data available yet.</p>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={monthlySales}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
               <Line
                 type="monotone"
-                dataKey="total_sales"
+                dataKey="total_revenue"
                 stroke="#ff5c00"
                 strokeWidth={3}
                 dot={{ r: 4, fill: "#ff5c00" }}
