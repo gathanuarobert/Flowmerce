@@ -3,78 +3,16 @@ import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import api from "../utils/api";
 
 const Platform = () => {
-  const [stats, setStats] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [ordersRes, productsRes] = await Promise.all([
-          api.get("orders/"),
-          api.get("products/"),
-        ]);
-
-        const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
-        const products = Array.isArray(productsRes.data) ? productsRes.data : [];
-
-        const totalOrders = orders.length;
-        const totalProductsSold = orders.reduce(
-          (sum, order) =>
-            sum +
-            ((order.items || []).reduce(
-              (subSum, item) => subSum + (item.quantity || 0),
-              0
-            ) || 0),
-          0
-        );
-
-        const totalRevenue = orders.reduce(
-          (sum, order) => sum + (parseFloat(order.amount) || 0),
-          0
-        );
-
-        const uniqueCustomers = new Set(
-          orders.map((order) => order.employee_email)
-        ).size;
-
-        const statsData = [
-          {
-            label: "Products sold",
-            value: totalProductsSold,
-            change: "+5.2%",
-            direction: "up",
-            color: "green",
-            note: "from last week",
-          },
-          {
-            label: "Orders placed",
-            value: totalOrders,
-            change: "-2.8%",
-            direction: "down",
-            color: "red",
-            note: "from last week",
-          },
-          {
-            label: "Unique customers",
-            value: uniqueCustomers,
-            change: "+4.8%",
-            direction: "up",
-            color: "green",
-            note: "from last week",
-          },
-          {
-            label: "Revenue",
-            value: `$${totalRevenue.toLocaleString()}`,
-            change: "+6.3%",
-            direction: "up",
-            color: "green",
-            note: "from last week",
-          },
-        ];
-
-        setStats(statsData);
+        const res = await api.get("analytics/summary/");
+        setStats(res.data);
       } catch (error) {
-        console.error("Error fetching platform stats:", error);
+        console.error("Error fetching analytics summary:", error);
       } finally {
         setLoading(false);
       }
@@ -87,9 +25,48 @@ const Platform = () => {
     return <p className="text-gray-600">Loading stats...</p>;
   }
 
+  if (!stats) {
+    return <p className="text-red-500">No stats data available.</p>;
+  }
+
+  const formattedStats = [
+    {
+      label: "Total Orders",
+      value: stats.total_orders,
+      change: "+5.2%",
+      direction: "up",
+      color: "green",
+      note: "from last week",
+    },
+    {
+      label: "Total Revenue",
+      value: `KSh ${Number(stats.total_revenue).toLocaleString()}`,
+      change: "+6.3%",
+      direction: "up",
+      color: "green",
+      note: "from last week",
+    },
+    {
+      label: "Average Order Value",
+      value: `KSh ${Number(stats.avg_order_value).toFixed(2)}`,
+      change: "+2.1%",
+      direction: "up",
+      color: "green",
+      note: "from last week",
+    },
+    {
+      label: "Total Products",
+      value: stats.total_products,
+      change: "-1.4%",
+      direction: "down",
+      color: "red",
+      note: "from last week",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {stats.map((stat, idx) => (
+      {formattedStats.map((stat, idx) => (
         <div
           key={idx}
           className="bg-white rounded-xl p-4 shadow flex flex-col gap-1"
