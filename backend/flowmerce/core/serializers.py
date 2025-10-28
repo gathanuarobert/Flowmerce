@@ -3,9 +3,21 @@ from django.shortcuts import get_object_or_404
 from .models import User, Product, Order, OrderItem, Category, Tag
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=6)
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'is_active', 'last_login']
+        fields = ['id', 'email', 'name', 'password', 'is_active', 'last_login']
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = self.Meta.model(**validated_data)
+        if password:
+            user.set_password(password)  # ✅ Hash the password properly
+        user.save()
+        return user
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
