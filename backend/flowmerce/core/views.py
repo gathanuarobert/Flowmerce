@@ -55,31 +55,26 @@ class UserRegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        # 1️⃣ Get reCAPTCHA token from frontend
         recaptcha_token = request.data.get('g-recaptcha-response')
 
-        # 2️⃣ Verify with Google
         if not recaptcha_token or not verify_recaptcha(recaptcha_token):
             return Response(
                 {'error': 'Invalid reCAPTCHA. Please try again.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 3️⃣ Proceed with registration
-        email = request.data.get('email')
-        password = request.data.get('password')
-
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
+            user = serializer.save()  # ✅ password now hashed via serializer.create()
             token = RefreshToken.for_user(user)
             return Response({
-                'user': serializer.data,
+                'user': UserSerializer(user).data,
                 'access': str(token.access_token),
                 'refresh': str(token)
             }, status=status.HTTP_201_CREATED)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
     
 class UserLoginAPIView(APIView):
