@@ -65,19 +65,19 @@ const Analytics = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
         <div className="bg-white/90 p-5 rounded-2xl shadow">
           <h2 className="text-gray-600 text-sm">Total Orders</h2>
-          <p className="text-3xl font-bold text-[#ff5c00]">
+          <p className="text-3xl font-bold text-black">
             {summary.total_orders}
           </p>
         </div>
         <div className="bg-white/90 p-5 rounded-2xl shadow">
           <h2 className="text-gray-600 text-sm">Total Revenue</h2>
-          <p className="text-3xl font-bold text-[#ff5c00]">
+          <p className="text-3xl font-bold text-black">
             KSh {summary.total_revenue?.toLocaleString()}
           </p>
         </div>
         <div className="bg-white/90 p-5 rounded-2xl shadow">
           <h2 className="text-gray-600 text-sm">Average Order Value</h2>
-          <p className="text-3xl font-bold text-[#ff5c00]">
+          <p className="text-3xl font-bold text-black">
             KSh {summary.avg_order_value?.toFixed(2)}
           </p>
         </div>
