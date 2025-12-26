@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
 import api from "../utils/api";
 
 const statusColors = {
@@ -22,6 +23,22 @@ const Orders = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
+  const [openActionMenu, setOpenActionMenu] = useState(null);
+
+  const handleDelete = async (orderId) => {
+    if (!window.confirm("Are you sure you want to delete this order?")) return;
+
+    try {
+      await api.delete(`/orders/${orderId}/`);
+      setOrders((prev) => prev.filter((order) => order.id !== orderId));
+    } catch (err) {
+      alert("Failed to delete order: " + (err.message || ""));
+    }
+  };
+
+  const handleEdit = (orderId) => {
+    window.location.href = `/editorder/${orderId}`;
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -38,7 +55,8 @@ const Orders = () => {
         // 🔹 Compute live stats from fetched orders
         const totalOrders = data.length;
         const fulfilledOrders = data.filter(
-          (order) => order.status === "Completed" || order.status === "Fulfilled"
+          (order) =>
+            order.status === "Completed" || order.status === "Fulfilled"
         ).length;
         const returnedOrders = data.filter(
           (order) => order.status === "Cancelled"
@@ -72,8 +90,7 @@ const Orders = () => {
             label: "Returned Orders",
             value: returnedOrders,
             trend: returnedOrders > 0 ? "+2.1%" : "-1.2%",
-            trendColor:
-              returnedOrders > 0 ? "text-red-600" : "text-green-600",
+            trendColor: returnedOrders > 0 ? "text-red-600" : "text-green-600",
             sub: "last week",
           },
           {
@@ -197,7 +214,7 @@ const Orders = () => {
       </div>
 
       {/* Orders Table */}
-      <div className="overflow-x-auto bg-white rounded-xl shadow border border-gray-100">
+      <div className="md:block hidden overflow-x-auto bg-white rounded-xl shadow border border-gray-100">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-[#F3F4F6] text-gray-600">
@@ -244,7 +261,36 @@ const Orders = () => {
                       {order.status || "N/A"}
                     </span>
                   </td>
-                  <td className="py-3 px-4">...</td>
+                  <td className="py-3 px-4 relative">
+                    <button
+                      onClick={() =>
+                        setOpenActionMenu(
+                          openActionMenu === order.id ? null : order.id
+                        )
+                      }
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                    >
+                      •••
+                    </button>
+
+                    {/* Dropdown menu */}
+                    {openActionMenu === order.id && (
+                      <div className="absolute right-0 mt-2 w-24 bg-white shadow-lg rounded border border-gray-200 z-10">
+                        <button
+                          onClick={() => handleEdit(order.id)}
+                          className="block w-full text-left px-4 py-2 text-blue-600 text-sm hover:bg-gray-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(order.id)}
+                          className="block w-full text-left px-4 py-2 text-red-600 text-sm hover:bg-gray-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (
@@ -256,6 +302,68 @@ const Orders = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {currentOrders.length > 0 ? (
+          currentOrders.map((order) => (
+            <div
+              key={order.id}
+              className="bg-white rounded-xl p-4 shadow flex flex-col gap-3"
+            >
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-[#ff5c00]">
+                  Order {order.number || "N/A"}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {order.order_date
+                    ? new Date(order.order_date).toLocaleDateString("en-US", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "N/A"}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-sm text-gray-700">
+                <span>{order.employee_email || "N/A"}</span>
+                <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-600">
+                  Paid
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-sm text-gray-800 font-medium">
+                <span>
+                  Total: Ksh {parseFloat(order.amount || 0).toFixed(2)}
+                </span>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs ${
+                    statusColors[order.status] || "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  {order.status || "N/A"}
+                </span>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                {/* Replace with actual actions */}
+                <Link to={`/editorder/${order.id}`}>
+                                  <Pencil className="w-4 h-4 text-blue-600" />
+                                </Link>
+                <Trash2
+                                  className="w-4 h-4 text-red-600"
+                                  onClick={() => handleDelete(order.id)}
+                                />
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="py-6 text-center text-gray-500">
+            No orders available
+          </div>
+        )}
       </div>
 
       {/* ✅ Pagination Controls */}
