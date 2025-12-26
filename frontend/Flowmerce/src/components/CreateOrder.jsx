@@ -190,7 +190,7 @@ function CreateOrder() {
             Add New Order
           </h1>
           <div className="space-x-2">
-            <button className="px-4 py-2 border border-gray-300 rounded-4xl text-sm text-gray-600 hover:bg-gray-50">
+            <button onClick={() => navigate("/orders")} className="px-4 py-2 border border-gray-300 rounded-4xl text-sm text-gray-600 hover:bg-gray-50">
               Cancel
             </button>
             <button
