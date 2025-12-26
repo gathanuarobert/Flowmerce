@@ -20,6 +20,29 @@ const Products = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [categories, setCategories] = useState([]);
   const [rawSearchTerm, setRawSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    status: "",
+    category: "",
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const defaultCategories = [
+    { id: "1", title: "Electronics" },
+    { id: "2", title: "Clothing" },
+    { id: "3", title: "Home & Garden" },
+    { id: "4", title: "Beauty & Personal Care" },
+    { id: "5", title: "Sports & Outdoors" },
+    { id: "6", title: "Toys & Games" },
+    { id: "7", title: "Food & Beverage" },
+    { id: "8", title: "Books & Media" },
+    { id: "9", title: "Office Supplies" },
+    { id: "10", title: "Health & Wellness" },
+    { id: "11", title: "Automotive" },
+    { id: "12", title: "Pet Supplies" },
+    { id: "13", title: "Household Goods" },
+    { id: "14", title: "Jewelry & Accessories" },
+    { id: "15", title: "Arts & Crafts" },
+    { id: "16", title: "Other" },
+  ];
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -32,10 +55,17 @@ const Products = () => {
     const fetchCategories = async () => {
       try {
         const res = await api.get("/categories/");
-        const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setCategories(data);
-      } catch (err) {
-        console.error("Failed to fetch categories", err);
+        const dbCategories = Array.isArray(res.data)
+          ? res.data.map((cat) => ({
+              id: String(cat.id),
+              title: cat.title,
+            }))
+          : [];
+
+        setCategories([...defaultCategories, ...dbCategories]);
+      } catch (error) {
+        console.error("Failed to fetch categories, using defaults");
+        setCategories(defaultCategories);
       }
     };
 
@@ -63,18 +93,32 @@ const Products = () => {
     fetchProducts();
   }, []);
 
+  useEffect(() => {
+  console.log("FILTER CATEGORY:", filters.category);
+  console.log("PRODUCT CATEGORIES:", products.map(p => ({
+    id: p.id,
+    cat: p.category,
+    cat_details: p.category_details?.id
+  })));
+}, [filters.category]);
+
+
   const filteredProducts = products.filter((product) => {
-  const search = searchTerm.toLowerCase();
+    const search = searchTerm.toLowerCase();
 
-  const titleMatch = product?.title?.toLowerCase().includes(search);
-  const categoryMatch = product?.category_details?.title
-    ?.toLowerCase()
-    .includes(search);
-  const statusMatch = product?.status?.toLowerCase().includes(search);
+    const matchesSearch =
+      product?.title?.toLowerCase().includes(search) ||
+      product?.category_details?.title?.toLowerCase().includes(search) ||
+      product?.status?.toLowerCase().includes(search);
 
-  return titleMatch || categoryMatch || statusMatch;
-});
+    const matchesStatus = !filters.status || product.status === filters.status;
 
+    const matchesCategory =
+      !filters.category ||
+      String(product.category_details?.id) === String(filters.category);
+
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
 
   const requestSort = (key) => {
     let direction = "asc";
@@ -115,19 +159,54 @@ const Products = () => {
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
-    <div className="p-6 bg-white rounded-xl">
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-6 md:bg-white rounded-xl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
         <input
           type="text"
           placeholder="Search by product, category, or status..."
           value={rawSearchTerm}
           onChange={(e) => setRawSearchTerm(e.target.value)}
-          className="px-4 py-2 bg-[#f49cac]/30 rounded-4xl w-1/3 focus:outline-0 focus:ring-2 focus:ring-amber-600"
+          className="px-4 py-2 bg-[#f49cac]/30 rounded-4xl w-full sm:w-1/3 focus:outline-0 focus:ring-2 focus:ring-amber-600"
         />
 
-        <div className="flex gap-2">
-          <button className="px-4 py-2 rounded-4xl shadow">Sort</button>
-          <button className="px-4 py-2 rounded-4xl shadow">Filter</button>
+        {showFilters && (
+          <div className="flex flex-wrap gap-4 mb-4 justify-center">
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
+              className="px-3 py-2 rounded-4xl bg-[#f49cac]/30 focus:outline-0 focus:ring-2 focus:ring-amber-600"
+            >
+              <option value="">All Statuses</option>
+              <option value="available">In Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </select>
+
+            <select
+              value={filters.category}
+              onChange={(e) =>
+                setFilters({ ...filters, category: e.target.value })
+              }
+              className="px-3 py-2 rounded-4xl bg-[#f49cac]/30 focus:outline-0 focus:ring-2 focus:ring-amber-600"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className="px-4 py-2 rounded-4xl shadow bg-white"
+          >
+            Filter
+          </button>
           <Link to="/addproducts" relative="path">
             <button className="bg-[#ff5c00] text-white px-4 py-2 rounded-4xl cursor-pointer">
               + Add Product
@@ -158,87 +237,142 @@ const Products = () => {
         </div>
       )}
 
-      <table className="w-full text-left">
-        <thead>
-          <tr className="bg-gray-100/30">
-            <th
-              className="py-2 cursor-pointer"
-              onClick={() => requestSort("title")}
-            >
-              Product
-            </th>
-            <th
-              className="py-2 cursor-pointer"
-              onClick={() => requestSort("category")}
-            >
-              Category
-            </th>
-            <th
-              className="py-2 cursor-pointer"
-              onClick={() => requestSort("status")}
-            >
-              Status
-            </th>
-            <th
-              className="py-2 cursor-pointer"
-              onClick={() => requestSort("stock")}
-            >
-              Stock
-            </th>
-            <th
-              className="py-2 cursor-pointer"
-              onClick={() => requestSort("price")}
-            >
-              Price
-            </th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentProducts.map((prod) => (
-            <tr key={prod.id} className="hover:bg-gray-50">
-              <td className="py-3 flex items-center gap-3">
-                {prod.image && (
-                  <img
-                    src={prod.image}
-                    alt={prod.title}
-                    className="w-10 h-10 rounded object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none"; // hide broken image icons
-                    }}
+      <div className="hidden md:block">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-gray-100/30">
+              <th
+                className="py-2 cursor-pointer"
+                onClick={() => requestSort("title")}
+              >
+                Product
+              </th>
+              <th
+                className="py-2 cursor-pointer"
+                onClick={() => requestSort("category")}
+              >
+                Category
+              </th>
+              <th
+                className="py-2 cursor-pointer"
+                onClick={() => requestSort("status")}
+              >
+                Status
+              </th>
+              <th
+                className="py-2 cursor-pointer"
+                onClick={() => requestSort("stock")}
+              >
+                Stock
+              </th>
+              <th
+                className="py-2 cursor-pointer"
+                onClick={() => requestSort("price")}
+              >
+                Price
+              </th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentProducts.map((prod) => (
+              <tr key={prod.id} className="hover:bg-gray-50">
+                <td className="py-3 flex items-center gap-3">
+                  {prod.image && (
+                    <img
+                      src={prod.image}
+                      alt={prod.title}
+                      className="w-10 h-10 rounded object-cover"
+                      onError={(e) => {
+                        e.target.style.display = "none"; // hide broken image icons
+                      }}
+                    />
+                  )}
+                  {prod.title}
+                </td>
+                <td>{prod.category_details?.title || "Uncategorized"}</td>
+                <td>
+                  <span
+                    className={`px-2 py-1 rounded-full text-sm ${
+                      statusColors[prod.status] || "bg-gray-100"
+                    }`}
+                  >
+                    {prod.status === "available"
+                      ? "In Stock"
+                      : prod.status === "out_of_stock"
+                      ? "Out of Stock"
+                      : "Coming Soon"}
+                  </span>
+                </td>
+                <td>{prod.stock}</td>
+                <td>KSh. {prod.price?.toFixed(2) || "0.00"}</td>
+                <td className="flex gap-2">
+                  <Link to={`/editproduct/${prod.id}`}>
+                    <Pencil className="w-4 h-4 text-blue-600 cursor-pointer" />
+                  </Link>
+                  <Trash2
+                    className="w-4 h-4 text-red-600 cursor-pointer"
+                    onClick={() => handleDelete(prod.id)}
                   />
-                )}
-                {prod.title}
-              </td>
-              <td>{prod.category_details?.title || "Uncategorized"}</td>
-              <td>
-                <span
-                  className={`px-2 py-1 rounded-full text-sm ${
-                    statusColors[prod.status] || "bg-gray-100"
-                  }`}
-                >
-                  {prod.status === "available"
-                    ? "In Stock"
-                    : prod.status === "out_of_stock"
-                    ? "Out of Stock"
-                    : "Coming Soon"}
-                </span>
-              </td>
-              <td>{prod.stock}</td>
-              <td>KSh. {prod.price?.toFixed(2) || "0.00"}</td>
-              <td className="flex gap-2">
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="md:hidden space-y-4">
+        {currentProducts.map((prod) => (
+          <div key={prod.id} className="rounded-xl p-4 shadow-sm bg-white">
+            <div className="flex items-center gap-3 mb-2">
+              {prod.image && (
+                <img
+                  src={prod.image}
+                  alt={prod.title}
+                  className="w-12 h-12 rounded object-cover"
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+              )}
+              <div>
+                <p className="font-semibold">{prod.title}</p>
+                <p className="text-sm text-gray-500">
+                  {prod.category_details?.title || "Uncategorized"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center text-sm mb-2">
+              <span
+                className={`px-2 py-1 rounded-full ${
+                  statusColors[prod.status] || "bg-gray-100"
+                }`}
+              >
+                {prod.status === "available"
+                  ? "In Stock"
+                  : prod.status === "out_of_stock"
+                  ? "Out of Stock"
+                  : "Coming Soon"}
+              </span>
+              <span className="font-medium">
+                KSh. {prod.price?.toFixed(2) || "0.00"}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center text-sm text-gray-600">
+              <span>Stock: {prod.stock}</span>
+              <div className="flex gap-3">
                 <Link to={`/editproduct/${prod.id}`}>
-                  <Pencil className="w-4 h-4 text-blue-600 cursor-pointer" />
+                  <Pencil className="w-4 h-4 text-blue-600" />
                 </Link>
                 <Trash2
-                  className="w-4 h-4 text-red-600 cursor-pointer"
+                  className="w-4 h-4 text-red-600"
                   onClick={() => handleDelete(prod.id)}
                 />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {sortedProducts.length > productsPerPage && (
         <div className="flex justify-center mt-4">
