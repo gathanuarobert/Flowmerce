@@ -36,7 +36,7 @@ const Header = () => {
         <p className="text-xl font-semibold text-gray-800">{userName}</p>
       </div>
 
-      <div className="flex items-center space-x-5">
+      {/* <div className="flex items-center space-x-5">
         <div>
           <input
             type="text"
@@ -60,7 +60,7 @@ const Header = () => {
             alt="user avatar"
           />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
