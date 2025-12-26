@@ -4,7 +4,6 @@ import { LuBox } from "react-icons/lu";
 import {
   TbBrandGoogleAnalytics,
   TbReportSearch,
-  TbUsers,
   TbDatabase,
   TbRobot,
 } from "react-icons/tb";
@@ -17,7 +16,7 @@ const Sidebar = () => {
 
   const SIDEBAR_LINKS = [
     { id: 1, path: "/", name: "Dashboard", icon: LuBox },
-    { id: 2, path: "/users", name: "Users", icon: TbUsers },
+
     { id: 3, path: "/products", name: "Products", icon: MdInventory },
     { id: 5, path: "/orders", name: "Orders", icon: MdShoppingCart },
     {
@@ -40,12 +39,15 @@ const Sidebar = () => {
   return (
     <div className="w-16 md:w-56 fixed left-0 top-0 z-10 h-screen pt-8 px-4 bg-white flex flex-col justify-between shadow-sm">
       {/* Logo Section */}
-      <div className="flex justify-center md:justify-start items-center mb-8">
-        <TbDatabase className="text-2xl text-[#ff5c00]" />
-        <span className="hidden md:flex ml-2 font-semibold text-[#ff5c00] text-lg">
+      <Link
+        to="/"
+        className="flex justify-center md:justify-start items-center mb-8 group"
+      >
+        <TbDatabase className="text-2xl text-[#ff5c00] group-hover:opacity-80 transition" />
+        <span className="hidden md:flex ml-2 font-semibold text-[#ff5c00] text-lg group-hover:opacity-80 transition">
           Flowmerce
         </span>
-      </div>
+      </Link>
 
       {/* Navigation Links */}
       <ul className="flex-1 space-y-4">
@@ -82,17 +84,16 @@ const Sidebar = () => {
       </ul>
 
       {/* Help Section */}
-<div className="w-full mt-auto px-2 md:px-4 py-2">
-  <Link
-    to="/reports"
-    className="flex flex-col md:flex-row items-center justify-center md:justify-start md:space-x-3 py-2 px-2 md:px-5 
+      <div className="w-full mt-auto px-2 md:px-4 py-2">
+        <Link
+          to="/reports"
+          className="flex flex-col md:flex-row items-center justify-center md:justify-start md:space-x-3 py-2 px-2 md:px-5 
                bg-gradient-to-r from-amber-500 to-[#ff5c00] text-white rounded-4xl font-medium hover:opacity-90 transition"
-  >
-    <span className="text-lg font-bold">?</span>
-    <span className="hidden md:flex text-sm">Need Help?</span>
-  </Link>
-</div>
-
+        >
+          <span className="text-lg font-bold">?</span>
+          <span className="hidden md:flex text-sm">Need Help?</span>
+        </Link>
+      </div>
     </div>
   );
 };
