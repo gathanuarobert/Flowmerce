@@ -7,6 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import parsers, generics
 import logging
+from django.shortcuts import get_object_or_404
 import requests
 from django.conf import settings
 from django.db.models.functions import TruncMonth
@@ -256,3 +257,42 @@ def monthly_sales(request):
         formatted_data["total_orders"].append(item["total_orders"])
 
     return Response(formatted_data)
+
+@api_view(["POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+def order_items_handler(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+
+    if request.method == "DELETE":
+        deleted_count, _ = OrderItem.objects.filter(order=order).delete()
+        order.amount = 0
+        order.save(update_fields=["amount"])
+
+        return Response(
+            {"detail": f"{deleted_count} items deleted"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    if request.method == "POST":
+        serializer = OrderItemSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        product = serializer.validated_data["product"]
+
+        item = serializer.save(
+            order=order,
+            price=product.price,
+            product_title=product.title,
+            product_price=product.price,
+            product_sku=product.sku,
+        )
+
+        order.amount = sum(i.total_price for i in order.items.all())
+        order.save(update_fields=["amount"])
+
+        return Response(
+            OrderItemSerializer(item).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
