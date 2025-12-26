@@ -12,6 +12,7 @@ from .views import (
     CategoryViewSet,
     TagViewSet,
     CurrentUserView,
+    order_items_handler,
     analytics_summary,
     monthly_sales,
     show_all_urls  # Add this
@@ -25,6 +26,7 @@ router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'tags', TagViewSet, basename='tag')
 
 urlpatterns = [
+    path("orders/<int:order_id>/items/", order_items_handler, name="order-items-handler"),
     path("users/me/", CurrentUserView.as_view(), name="current-user"),
     path('assistant/', FlowmerceAssistantView.as_view(), name='flowmerce-assistant'),
     path('analytics/summary/', analytics_summary, name='analytics-summary'),
