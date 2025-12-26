@@ -57,13 +57,22 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(required=False)
+    product_price = serializers.DecimalField(required=False, max_digits=10, decimal_places=2)
     product_sku = serializers.CharField(required=False)
-    product_title = serializers.CharField(source='product.title', read_only=True)
-    product_price = serializers.DecimalField(source='product.price', read_only=True, max_digits=10, decimal_places=2)
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_title', 'product_price', 'product_sku', 'quantity', 'price']
+        fields = [
+            'id',
+            'product',
+            'product_title',
+            'product_price',
+            'product_sku',
+            'quantity',
+            'price',
+        ]
+
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
