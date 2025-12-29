@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Sum, Avg, Count
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
@@ -122,30 +123,44 @@ class UserLogoutView(APIView):
         token = RefreshToken(refresh_token)
         token.blacklist()
         return Response({'message': 'Log out successfully'}, status=status.HTTP_205_RESET_CONTENT)
+    
 
-# Consolidated Product ViewSet (replaces ProductListView, ProductCreateView, and ProductDetailView)
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Custom permission: Only allow owners of a product to edit it.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed for any authenticated user
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # Write permissions only for the owner
+        return obj.owner == request.user
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     parser_classes = [parsers.MultiPartParser, parsers.JSONParser]
-    queryset = Product.objects.all()
     serializer_class = ProductSerializer
     pagination_class = CustomPagination
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAdminUser()]
-        return super().get_permissions()
+    def get_queryset(self):
+        # Only return products owned by the logged-in user
+        return Product.objects.filter(owner=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def perform_create(self, serializer):
+        # Automatically set the owner to the logged-in user
+        serializer.save(owner=self.request.user)
+   
+
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
     serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        # Only show orders belonging to the logged-in user
+        return Order.objects.filter(employee=self.request.user)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -153,8 +168,9 @@ class OrderViewSet(viewsets.ModelViewSet):
         return context
 
     def perform_create(self, serializer):
-        # employee set in serializer.create(), so this can stay empty or omitted
-        serializer.save()
+        # Automatically set employee to the logged-in user
+        serializer.save(employee=self.request.user)
+
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -194,19 +210,21 @@ def show_all_urls(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def analytics_summary(request):
-    total_orders = Order.objects.count()
-    total_revenue = Order.objects.aggregate(total=Sum('amount'))['total'] or 0
-    avg_order_value = Order.objects.aggregate(avg=Avg('amount'))['avg'] or 0
-    total_products = Product.objects.count()
+    total_orders = Order.objects.filter(employee=request.user).count()
+    total_revenue = Order.objects.filter(employee=request.user).aggregate(total=Sum('amount'))['total'] or 0
+    avg_order_value = Order.objects.filter(employee=request.user).aggregate(avg=Avg('amount'))['avg'] or 0
+    total_products = Product.objects.filter(owner=request.user).count()
 
     top_products = (
-        OrderItem.objects.values('product__title')
+        OrderItem.objects.filter(order__employee=request.user)
+        .values('product__title')
         .annotate(total_sold=Sum('quantity'))
         .order_by('-total_sold')[:5]
     )
 
     status_counts = (
-        Order.objects.values('status')
+        Order.objects.filter(employee=request.user)
+        .values('status')
         .annotate(count=Count('status'))
     )
 
@@ -219,20 +237,16 @@ def analytics_summary(request):
         "status_counts": status_counts,
     })
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def monthly_sales(request):
-    from django.db.models.functions import TruncMonth
-    from django.db.models import Sum, Count
-
     year = request.GET.get('year')
-    queryset = Order.objects.all()
+    queryset = Order.objects.filter(employee=request.user)
 
-    # Filter by year if provided
     if year:
         queryset = queryset.filter(created_at__year=year)
 
-    # Aggregate both total sales and total orders per month
     sales_data = (
         queryset
         .annotate(month=TruncMonth('created_at'))
@@ -244,7 +258,6 @@ def monthly_sales(request):
         .order_by('month')
     )
 
-    # Format data for frontend
     formatted_data = {
         "months": [],
         "total_revenue": [],
@@ -258,16 +271,16 @@ def monthly_sales(request):
 
     return Response(formatted_data)
 
+
 @api_view(["POST", "DELETE"])
 @permission_classes([IsAuthenticated])
 def order_items_handler(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
+    order = get_object_or_404(Order, id=order_id, employee=request.user)
 
     if request.method == "DELETE":
         deleted_count, _ = OrderItem.objects.filter(order=order).delete()
         order.amount = 0
         order.save(update_fields=["amount"])
-
         return Response(
             {"detail": f"{deleted_count} items deleted"},
             status=status.HTTP_204_NO_CONTENT
