@@ -20,7 +20,7 @@ from .views import (
 from .views_ai import FlowmerceAssistantView
 
 router = DefaultRouter()
-router.register(r'products', ProductViewSet)
+router.register(r'products', ProductViewSet, basename='product')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'tags', TagViewSet, basename='tag')
