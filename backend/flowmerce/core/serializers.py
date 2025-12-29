@@ -14,7 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password', None)
         user = self.Meta.model(**validated_data)
         if password:
-            user.set_password(password)  # ✅ Hash the password properly
+            user.set_password(password)
         user.save()
         return user
 
@@ -24,7 +24,9 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+
 class ProductSerializer(serializers.ModelSerializer):
+    owner = serializers.StringRelatedField(read_only=True)  # Added: show product owner
     category = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
         write_only=True
@@ -40,8 +42,8 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'title', 'description', 'price', 'quantity', 'stock',
-            'sku', 'image', 'status', 'category', 'category_details',
-            'tags', 'slug', 'created_at', 'updated_at'  # Add other fields if applicable
+            'sku', 'image', 'status', 'owner', 'category', 'category_details',
+            'tags', 'slug', 'created_at', 'updated_at'
         ]
         extra_kwargs = {
             'image': {'required': False, 'allow_null': True},
@@ -53,7 +55,6 @@ class ProductSerializer(serializers.ModelSerializer):
             return float(value)
         except (TypeError, ValueError):
             raise serializers.ValidationError("Price must be a number")
-
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -81,7 +82,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'number', 'employee_email', 'amount', 'status', 'order_date', 'items']
+        fields = ['id', 'number', 'employee_email', 'amount', 'status', 'created_at', 'items']
 
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])
@@ -89,43 +90,30 @@ class OrderSerializer(serializers.ModelSerializer):
 
         # Create the order
         order = Order.objects.create(employee=user, **validated_data)
-        print(f"✅ Creating order items for: {order.number}")
 
         # Create the items
         for item_data in items_data:
-            print("➡️ Item data received:", item_data)
             product_field = item_data.get('product')
+            product = product_field if isinstance(product_field, Product) else get_object_or_404(Product, id=product_field)
 
-            if isinstance(product_field, Product):
-                product = product_field
-            else:
-                product = get_object_or_404(Product, id=product_field)
-
-            item = OrderItem.objects.create(
+            OrderItem.objects.create(
                 order=order,
                 product=product,
                 quantity=item_data['quantity'],
                 price=product.price,
                 product_title=product.title,
                 product_price=product.price,
-                product_sku=product.sku
-          )
+                product_sku=product.sku,
+            )
 
-        print("✅ Created item:", item.id)
-
-        # ✅ Now calculate amount after items exist
+        # Calculate total order amount
         order.amount = sum(item.total_price for item in order.items.all())
         order.save(update_fields=['amount'])
-        print(f"💰 Final order amount: {order.amount}")
 
-        print("✅ Finished creating order.")
         return order
-
-
-
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = '__all__'        
+        fields = '__all__'
