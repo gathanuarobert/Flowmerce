@@ -117,3 +117,46 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = '__all__'
+
+
+from rest_framework import serializers
+from core.models import PaymentRequest, Plan
+
+
+class PaymentRequestCreateSerializer(serializers.ModelSerializer):
+    plan_code = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = PaymentRequest
+        fields = [
+            'id',
+            'plan_code',
+            'amount',
+            'currency',
+            'mpesa_reference',
+            'status',
+            'created_at',
+        ]
+        read_only_fields = ['status', 'created_at']
+
+    def validate_mpesa_reference(self, value):
+        if PaymentRequest.objects.filter(mpesa_reference=value).exists():
+            raise serializers.ValidationError(
+                "This M-Pesa transaction code has already been used."
+            )
+        return value
+
+    def validate_plan_code(self, value):
+        try:
+            return Plan.objects.get(code=value)
+        except Plan.DoesNotExist:
+            raise serializers.ValidationError("Invalid plan selected.")
+
+    def create(self, validated_data):
+        plan = validated_data.pop('plan_code')
+
+        return PaymentRequest.objects.create(
+            user=self.context['request'].user,
+            plan=plan,
+            **validated_data
+        )
