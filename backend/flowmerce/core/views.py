@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.utils.text import slugify
-from .models import User, Product, Order, OrderItem, Category, Tag
-from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer, TagSerializer
+from .models import User, Product, Order, OrderItem, Category, Tag, PaymentRequest
+from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer, TagSerializer, PaymentRequestCreateSerializer
 
 def verify_recaptcha(token):
     """Verify Google reCAPTCHA v2 token with Google's API."""
@@ -309,3 +309,9 @@ def order_items_handler(request, order_id):
         )
 
 
+class PaymentRequestCreateView(generics.CreateAPIView):
+    serializer_class = PaymentRequestCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return PaymentRequest.objects.filter(user=self.request.user)
