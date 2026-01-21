@@ -102,7 +102,7 @@ class Product(models.Model):
         unique_together = ('owner', 'sku')  # 🔥 SaaS-safe SKU
 
     def __str__(self):
-        return f"{self.title} ({self.owner.email})"
+        return f"{self.title} ({self.owner.email if self.owner else 'No Owner'})"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -205,7 +205,280 @@ class Profile(models.Model):
         on_delete=models.CASCADE,
         related_name='profile'
     )
+
     profile_picture = models.ImageField(upload_to='profiles/', blank=True)
 
+    country = models.CharField(
+        max_length=2,
+        default='KE',
+        help_text="ISO country code e.g KE, US, NG"
+    )
+
+    currency = models.CharField(
+        max_length=3,
+        default='KES',
+        help_text="ISO currency code e.g KES, USD"
+    )
+
     def __str__(self):
-        return f"{self.user.email}'s profile"
+        return f"{self.user.email} ({self.country})"
+
+
+class Plan(models.Model):
+    code = models.CharField(max_length=50, unique=True)  # basic, pro
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class PlanPrice(models.Model):
+    plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
+
+    country = models.CharField(max_length=2)
+    currency = models.CharField(max_length=3)
+
+    monthly_price = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('plan', 'country')
+
+    def __str__(self):
+        return f"{self.plan.code} - {self.country}"
+
+
+class Subscription(models.Model):
+    ACTIVE = 'active'
+    EXPIRING = 'expiring'
+    EXPIRED = 'expired'
+    CANCELLED = 'cancelled'
+
+    STATUS_CHOICES = [
+        (ACTIVE, 'Active'),
+        (EXPIRING, 'Expiring'),
+        (EXPIRED, 'Expired'),
+        (CANCELLED, 'Cancelled'),
+    ]
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='subscription'
+    )
+
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.PROTECT
+    )
+
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=ACTIVE
+    )
+
+    auto_renew = models.BooleanField(default=True)
+    is_blocked = models.BooleanField(default=False)
+
+    granted_by_admin = models.BooleanField(default=False)
+    grant_reason = models.CharField(max_length=255, blank=True)
+
+    # 🔑 IMPORTANT (was missing before)
+    last_notified_at = models.DateTimeField(null=True, blank=True)
+
+    def is_active(self):
+        return self.status == self.ACTIVE and self.end_date and self.end_date > timezone.now()
+
+    def days_remaining(self):
+        return max((self.end_date - timezone.now()).days, 0)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.status}"
+
+
+class Feature(models.Model):
+    code = models.CharField(max_length=50, unique=True)  # ai_assistant
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class FeaturePrice(models.Model):
+    feature = models.ForeignKey(Feature, on_delete=models.CASCADE)
+
+    country = models.CharField(max_length=2)
+    currency = models.CharField(max_length=3)
+
+    monthly_price = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('feature', 'country')
+
+
+class UserFeatureSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    feature = models.ForeignKey(Feature, on_delete=models.CASCADE)
+
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('user', 'feature')
+
+
+class Payment(models.Model):
+    SUCCESS = 'success'
+    FAILED = 'failed'
+    PENDING = 'pending'
+
+    STATUS_CHOICES = [
+        (SUCCESS, 'Success'),
+        (FAILED, 'Failed'),
+        (PENDING, 'Pending'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='payments'
+    )
+
+    amount = models.PositiveIntegerField()
+    currency = models.CharField(max_length=3)
+
+    provider = models.CharField(max_length=50)  # mpesa, stripe
+    reference = models.CharField(max_length=255, unique=True)
+    purpose = models.CharField(
+        max_length=50,
+        help_text="subscription, ai_feature"
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=PENDING
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class SubscriptionGrant(models.Model):
+    ADMIN = 'admin'
+    MPESA = 'mpesa'
+    STRIPE = 'stripe'
+
+    SOURCE_CHOICES = [
+        (ADMIN, 'Admin Grant'),
+        (MPESA, 'Mpesa'),
+        (STRIPE, 'Stripe'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='subscription_grants'
+    )
+
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.PROTECT
+    )
+
+    granted_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='granted_subscriptions'
+    )
+
+    source = models.CharField(
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default=ADMIN
+    )
+
+    duration_days = models.PositiveIntegerField(help_text="Number of days granted")
+
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.plan.code} ({self.duration_days} days)"
+    
+    def save(self, *args, **kwargs):
+        creating = self.pk is None
+
+        if not self.end_date:
+            self.end_date = self.start_date + timezone.timedelta(days=self.duration_days)
+
+        super().save(*args, **kwargs)
+
+        if creating:
+            Subscription.objects.update_or_create(
+                user=self.user,
+            defaults={
+                'plan': self.plan,
+                'start_date': self.start_date,
+                'end_date': self.end_date,
+                'status': Subscription.ACTIVE,
+                'is_blocked': False,
+            }
+        )
+
+
+
+
+class PaymentRequest(models.Model):
+    PENDING = 'pending'
+    APPROVED = 'approved'
+    REJECTED = 'rejected'
+
+    STATUS_CHOICES = [
+        (PENDING, 'Pending'),
+        (APPROVED, 'Approved'),
+        (REJECTED, 'Rejected'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='payment_requests'
+    )
+
+    plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
+
+    amount = models.PositiveIntegerField()
+    currency = models.CharField(max_length=3, default='KES')
+
+    mpesa_reference = models.CharField(
+        max_length=20,
+        help_text="Mpesa transaction code"
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=PENDING
+    )
+
+    reviewed_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='reviewed_payments'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.amount} ({self.status})"
