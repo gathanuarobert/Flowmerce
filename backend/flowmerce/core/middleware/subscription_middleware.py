@@ -10,6 +10,7 @@ WHITELISTED_URL_NAMES = [
     'register',
     'payment-initiate',
     'payment-callback',
+    'payment-request',
 ]
 
 
