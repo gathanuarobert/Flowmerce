@@ -1,82 +1,63 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import api from "../utils/api";
+import { toast } from "react-toastify";
 
-export default function Billing() {
+const PRIMARY_COLOR = "#ff5c00";
+
+const inputClasses =
+  "bg-[#F49CAC]/30 px-4 py-2 rounded-4xl focus:outline-none focus:ring-2 focus:ring-amber-600 w-full";
+
+function Billing() {
   const [mpesaCode, setMpesaCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
-  const submitPayment = async () => {
+  const handleSubmit = async () => {
     if (!mpesaCode) {
-      alert("Please enter M-Pesa transaction code");
+      toast.error("Enter Mpesa transaction code");
       return;
     }
 
     setLoading(true);
+    try {
+      await api.post("/subscriptions/", {
+        amount: 1000,
+        mpesa_code: mpesaCode,
+        duration_days: 30,
+      });
 
-    const res = await fetch("/api/payments/request/", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        plan_code: "basic",   // or selected by user
-        amount: 1500,
-        currency: "KES",
-        mpesa_reference: mpesaCode,
-      }),
-    });
-
-    setLoading(false);
-
-    if (res.ok) {
-      setSubmitted(true);
-    } else {
-      const data = await res.json();
-      alert(data.detail || "Something went wrong");
+      toast.success("Payment submitted. Awaiting approval.");
+    } catch (err) {
+      toast.error("Failed to submit payment");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (submitted) {
-    return (
-      <div className="billing-box">
-        <h2>Payment Submitted ✅</h2>
-        <p>
-          Your payment is pending verification.  
-          You will gain access once approved.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="billing-box">
-      <h2>Subscription Required</h2>
+    <div className="max-w-md mx-auto bg-white p-6 rounded-xl shadow">
+      <h2 className="text-xl font-semibold mb-4">Billing</h2>
 
-      <p>
-        Your subscription has expired or is inactive.
-        Please renew to continue using the app.
+      <p className="text-sm text-gray-600 mb-4">
+        Pay via Mpesa to <b>07XXXXXXXX</b> then enter the transaction code below.
       </p>
 
-      <hr />
-
-      <h3>How to Pay</h3>
-      <ol>
-        <li>Open M-Pesa</li>
-        <li>Send <strong>KES 1,500</strong> to: <strong>07XXXXXXXX</strong></li>
-        <li>Enter the transaction code below</li>
-      </ol>
-
       <input
-        type="text"
-        placeholder="M-Pesa Transaction Code"
+        className={inputClasses}
+        placeholder="Mpesa Code (e.g. QWE123ABC)"
         value={mpesaCode}
         onChange={(e) => setMpesaCode(e.target.value)}
       />
 
-      <button onClick={submitPayment} disabled={loading}>
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="mt-4 w-full py-2 rounded-4xl text-white font-semibold"
+        style={{ backgroundColor: PRIMARY_COLOR }}
+      >
         {loading ? "Submitting..." : "Submit Payment"}
       </button>
     </div>
   );
 }
+
+export default Billing;
