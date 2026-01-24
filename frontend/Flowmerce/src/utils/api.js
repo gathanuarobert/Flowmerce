@@ -41,13 +41,27 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 errors (unauthorized)
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+
+    // 🔐 Handle subscription required (402)
+    if (status === 402 && data?.code === 'SUBSCRIPTION_REQUIRED') {
+      // Optional toast (nice UX)
+      toast.info(data.detail || 'Subscription required');
+
+      // Redirect to billing
+      window.location.href = '/billing';
+
+      return Promise.reject(error);
+    }
+
+    // 🔑 Handle unauthorized (token expired)
+    if (status === 401) {
       handleLogout();
       return Promise.reject(error);
     }
 
-    // Handle other errors
+    // Handle all other errors
     handleError(error);
     return Promise.reject(error);
   }
