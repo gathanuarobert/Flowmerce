@@ -41,6 +41,46 @@ class SubscriptionGrantAdmin(admin.ModelAdmin):
 
     readonly_fields = ('start_date', 'end_date')
 
+@admin.register(PaymentRequest)
+class PaymentRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        'user',
+        'plan',
+        'amount',
+        'currency',
+        'mpesa_reference',
+        'status',
+        'created_at',
+    )
+
+    list_filter = ('status', 'currency', 'plan')
+    search_fields = ('user__email', 'mpesa_reference')
+    readonly_fields = (
+        'user',
+        'plan',
+        'amount',
+        'currency',
+        'mpesa_reference',
+        'created_at',
+    )
+
+    actions = ['approve_payments', 'reject_payments']
+
+    def approve_payments(self, request, queryset):
+        for payment in queryset:
+            payment.approve(request.user)
+        self.message_user(request, "Selected payments approved.")
+
+    approve_payments.short_description = "Approve selected payments"
+
+    def reject_payments(self, request, queryset):
+        for payment in queryset:
+            payment.reject(request.user)
+        self.message_user(request, "Selected payments rejected.")
+
+    reject_payments.short_description = "Reject selected payments"
+    
+
 admin.site.register(Plan)
 admin.site.register(Subscription)
 admin.site.register(PlanPrice)
@@ -48,7 +88,7 @@ admin.site.register(Feature)
 admin.site.register(FeaturePrice)
 admin.site.register(UserFeatureSubscription)
 admin.site.register(Payment)
-admin.site.register(PaymentRequest)
+
 
 admin.site.site_header = 'Flowmerce Admin'
 admin.site.site_title = 'Flowmerce Admin Portal'
