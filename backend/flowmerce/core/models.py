@@ -482,3 +482,26 @@ class PaymentRequest(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.amount} ({self.status})"
+    
+    def approve(self, admin_user):
+        if self.status != self.PENDING:
+            return
+
+        self.status = self.APPROVED
+        self.reviewed_by = admin_user
+        self.reviewed_at = timezone.now()
+        self.save(update_fields=['status', 'reviewed_by', 'reviewed_at'])
+
+        SubscriptionGrant.objects.create(
+            user=self.user,
+            plan=self.plan,
+            duration_days=30,
+            source=SubscriptionGrant.ADMIN,
+            granted_by=admin_user
+        )
+
+    def reject(self, admin_user):
+        self.status = self.REJECTED
+        self.reviewed_by = admin_user
+        self.reviewed_at = timezone.now()
+        self.save(update_fields=['status', 'reviewed_by', 'reviewed_at'])
