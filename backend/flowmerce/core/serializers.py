@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
-from .models import User, Product, Order, OrderItem, Category, Tag
+from .models import User, Product, Order, OrderItem, Category, Tag, Subscription, PaymentRequest
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, min_length=6)
@@ -160,3 +160,24 @@ class PaymentRequestCreateSerializer(serializers.ModelSerializer):
             plan=plan,
             **validated_data
         )
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = [
+            'id',
+            'amount',
+            'mpesa_code',
+            'duration_days',
+            'status',
+            'start_date',
+            'end_date',
+            'created_at',
+        ]
+        read_only_fields = [
+            'status',
+            'start_date',
+            'end_date',
+            'created_at',
+        ]

@@ -4,6 +4,7 @@ from django.db.models import Sum, Avg, Count
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
+from rest_framework.permissions import IsAdminUser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import parsers, generics
@@ -17,8 +18,8 @@ logger = logging.getLogger(__name__)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.utils.text import slugify
-from .models import User, Product, Order, OrderItem, Category, Tag, PaymentRequest
-from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer, TagSerializer, PaymentRequestCreateSerializer
+from .models import User, Product, Order, OrderItem, Category, Tag, PaymentRequest, Subscription
+from .serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, CategorySerializer, TagSerializer, PaymentRequestCreateSerializer, SubscriptionSerializer
 
 def verify_recaptcha(token):
     """Verify Google reCAPTCHA v2 token with Google's API."""
@@ -315,3 +316,20 @@ class PaymentRequestCreateView(generics.CreateAPIView):
 
     def get_queryset(self):
         return PaymentRequest.objects.filter(user=self.request.user)
+
+
+class CreateSubscriptionView(generics.CreateAPIView):
+    serializer_class = SubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class ApproveSubscriptionView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        sub = Subscription.objects.get(pk=pk)
+        sub.activate()
+        return Response({"message": "Subscription activated"}, status=200)        

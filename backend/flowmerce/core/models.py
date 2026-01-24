@@ -2,6 +2,7 @@ from django.contrib.auth.models import UserManager, AbstractBaseUser, Permission
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from datetime import timedelta
 
 class CustomUserManager(UserManager):
     def _create_user(self, email, password, **extra_fields):
@@ -253,10 +254,11 @@ class Subscription(models.Model):
     CANCELLED = 'cancelled'
 
     STATUS_CHOICES = [
-        (ACTIVE, 'Active'),
-        (EXPIRING, 'Expiring'),
-        (EXPIRED, 'Expired'),
-        (CANCELLED, 'Cancelled'),
+        ('pending', 'Pending'),
+        ('active', 'Active'),
+        ('expired', 'Expired'),
+        ('rejected', 'Rejected'),
+
     ]
 
     user = models.OneToOneField(
@@ -269,14 +271,16 @@ class Subscription(models.Model):
         Plan,
         on_delete=models.PROTECT
     )
-
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    mpesa_code = models.CharField(max_length=50, blank=True, null=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
+    duration_days = models.IntegerField(default=30)
 
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default=ACTIVE
+        default='pending'
     )
 
     auto_renew = models.BooleanField(default=True)
@@ -288,8 +292,16 @@ class Subscription(models.Model):
     # 🔑 IMPORTANT (was missing before)
     last_notified_at = models.DateTimeField(null=True, blank=True)
 
+    
+    
     def is_active(self):
         return self.status == self.ACTIVE and self.end_date and self.end_date > timezone.now()
+
+    def activate(self):
+        self.status = 'active'
+        self.start_date = timezone.now()
+        self.end_date = self.start_date + timedelta(days=self.duration_days)
+        self.save()
 
     def days_remaining(self):
         return max((self.end_date - timezone.now()).days, 0)
