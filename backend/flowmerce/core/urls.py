@@ -37,7 +37,7 @@ urlpatterns = [
     path('payments/request/', PaymentRequestCreateView.as_view(), name='payment-request'),
     path('', CreateSubscriptionView.as_view(), name='create-subscription'),
     path('<int:pk>/approve/', ApproveSubscriptionView.as_view(), name='approve-subscription'),
-    path('api/subscriptions/', include('subscriptions.urls')),
+    # path('api/subscriptions/', include('core.subscriptions.urls')),
     path('users/', UserListView.as_view(), name='user-list'),
     path('register/', UserRegisterView.as_view(), name='user-register'),
     path('login/', UserLoginAPIView.as_view(), name='user-login'),
