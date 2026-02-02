@@ -167,6 +167,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = [
             'id',
+            'user_email',
             'amount',
             'mpesa_code',
             'duration_days',
