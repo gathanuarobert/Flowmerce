@@ -323,7 +323,7 @@ class CreateSubscriptionView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user, status='pending')
 
 
 class ApproveSubscriptionView(APIView):
