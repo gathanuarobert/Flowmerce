@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../../utils/api";
+import api from "../utils/api";
 import { toast } from "react-toastify";
 
 const PRIMARY_COLOR = "#ff5c00";
@@ -43,7 +43,7 @@ function AdminSubscriptions() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6">
-      <div className="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow border">
+      <div className="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow">
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">
           Pending Subscriptions
         </h1>
