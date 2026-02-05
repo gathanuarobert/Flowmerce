@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework.permissions import IsAdminUser
 from rest_framework.pagination import PageNumberPagination
+from .permissions import IsAdminUser, IsAdminOrReadOnly, HasActiveSubscription, IsAdminUser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import parsers, generics
 import logging
@@ -49,7 +50,7 @@ class CurrentUserView(APIView):
         return Response(serializer.data)    
 
 class UserListView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAdminUser]
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = CustomPagination
@@ -144,7 +145,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     parser_classes = [parsers.MultiPartParser, parsers.JSONParser]
     serializer_class = ProductSerializer
     pagination_class = CustomPagination
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly, HasActiveSubscription]
 
     def get_queryset(self):
         # Only return products owned by the logged-in user
@@ -158,6 +159,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated, HasActiveSubscription]
 
     def get_queryset(self):
         # Only show orders belonging to the logged-in user
@@ -177,7 +179,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
 
     def perform_create(self, serializer):
         # Auto-generate slug if not provided
@@ -188,7 +190,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer  
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
 
 from django.http import JsonResponse
 from django.urls import get_resolver
@@ -209,7 +211,7 @@ def show_all_urls(request):
     return JsonResponse({'urls': url_list})
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, HasActiveSubscription])
 def analytics_summary(request):
     total_orders = Order.objects.filter(employee=request.user).count()
     total_revenue = Order.objects.filter(employee=request.user).aggregate(total=Sum('amount'))['total'] or 0
@@ -240,7 +242,7 @@ def analytics_summary(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, HasActiveSubscription])
 def monthly_sales(request):
     year = request.GET.get('year')
     queryset = Order.objects.filter(employee=request.user)
@@ -274,7 +276,7 @@ def monthly_sales(request):
 
 
 @api_view(["POST", "DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, HasActiveSubscription])
 def order_items_handler(request, order_id):
     order = get_object_or_404(Order, id=order_id, employee=request.user)
 
