@@ -4,31 +4,36 @@ from rest_framework.views import APIView
 from django.db.models import Sum
 from django.core.cache import cache
 from .models import Order, OrderItem
+from rest_framework.permissions import IsAuthenticated
+from .permissions import HasActiveSubscription
 import requests, json, traceback
 
 
 class FlowmerceAssistantView(APIView):
+    permission_classes = [IsAuthenticated, HasActiveSubscription]
 
-    def get_business_stats(self):
-        """Fetch or cache business stats with minimal DB work."""
-
-        cached = cache.get("business_stats")
+    def get_business_stats(self, user):
+        cache_key = f"business_stats_{user.id}"
+        cached = cache.get(cache_key)
         if cached:
             return cached
-
-        print("📊 Refreshing business stats cache...")
 
         today = timezone.now()
         month_start = today.replace(day=1)
 
-        # Single DB hit for monthly orders + revenue
-        month_orders = Order.objects.filter(created_at__gte=month_start)
+        month_orders = Order.objects.filter(
+            employee=user,
+            created_at__gte=month_start
+        )
+
         revenue = month_orders.aggregate(total=Sum("amount"))["total"] or 0
         order_count = month_orders.count()
 
-        # Top 5 products
         top_qs = (
-            OrderItem.objects.filter(order__created_at__gte=month_start)
+            OrderItem.objects.filter(
+                order__employee=user,
+                order__created_at__gte=month_start
+            )
             .values("product__title")
             .annotate(total_sold=Sum("quantity"))
             .order_by("-total_sold")[:5]
@@ -36,11 +41,11 @@ class FlowmerceAssistantView(APIView):
 
         top = (
             ", ".join(
-                f"{p['product__title']} (**{p['total_sold']} sold**)"
+                f"{p['product__title']} ({p['total_sold']} sold)"
                 for p in top_qs
             )
-            if top_qs.exists()
-            else "No sales data available yet."
+        if top_qs.exists()
+        else "No sales data available yet."
         )
 
         stats = {
@@ -49,8 +54,9 @@ class FlowmerceAssistantView(APIView):
             "top": top,
         }
 
-        cache.set("business_stats", stats, timeout=3600)  # 1 hour cache
+        cache.set(cache_key, stats, timeout=1800)
         return stats
+
 
     def post(self, request):
         print("⚡ [Flowmerce AI] Fast request received")
@@ -59,7 +65,7 @@ class FlowmerceAssistantView(APIView):
             user_message = request.data.get("message", "").strip()
 
             # Load cached business stats (fixed 1 DB hit if cache expired)
-            stats = self.get_business_stats()
+            stats = self.get_business_stats(request.user)
 
             formatted_revenue = f"**KES {stats['revenue']:,.0f}**"
             formatted_orders = f"**{stats['orders']}**"
