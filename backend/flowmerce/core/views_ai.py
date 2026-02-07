@@ -5,12 +5,12 @@ from django.db.models import Sum
 from django.core.cache import cache
 from .models import Order, OrderItem
 from rest_framework.permissions import IsAuthenticated
-from .permissions import HasActiveSubscription
+from .permissions import CanUseAI
 import requests, json, traceback
 
 
 class FlowmerceAssistantView(APIView):
-    permission_classes = [IsAuthenticated, HasActiveSubscription]
+    permission_classes = [IsAuthenticated, CanUseAI]
 
     def get_business_stats(self, user):
         cache_key = f"business_stats_{user.id}"
@@ -114,11 +114,20 @@ User: {user_message}
             )
 
             def stream():
-                # Send first byte instantly so frontend feels instant
                 yield "\u200b"
+
+                # increment AI usage
+                try:
+                    sub = request.user.subscription
+                    if sub.plan.code == "pro":
+                        sub.ai_requests_used = getattr(sub, "ai_requests_used", 0) + 1
+                        sub.save(update_fields=["ai_requests_used"])
+                except:
+                    pass
 
                 try:
                     for raw in session.iter_lines(decode_unicode=False, delimiter=b"\n"):
+
                         if not raw:
                             continue
                         try:
