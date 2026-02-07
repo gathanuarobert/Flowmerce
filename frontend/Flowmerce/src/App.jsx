@@ -14,7 +14,7 @@ import EditProduct from "./components/EditProduct";
 import CreateOrder from "./components/CreateOrder";
 import EditOrder from "./components/EditOrder";
 import Billing from "./components/Billing";
-import AdminSubscriptions from "./components/AdminSubscriptions";
+import AdminSubscriptions from "./components/AdminSubscription";
 
 import { useEffect } from "react";
 
