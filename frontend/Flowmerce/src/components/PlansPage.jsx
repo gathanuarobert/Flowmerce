@@ -43,17 +43,14 @@ export default function PlansPage() {
   const navigate = useNavigate();
 
   const handleSubscribe = (planCode) => {
-    console.log("Subscribe to:", planCode);
-    // navigate(`/subscribe/${planCode}`)
+    navigate("/billing", { state: { plan: planCode } });
   };
 
   return (
     <div className="min-h-screen  p-8">
       {/* Header */}
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-gray-800">
-          Choose your plan
-        </h1>
+        <h1 className="text-4xl font-bold text-gray-800">Choose your plan</h1>
         <p className="text-gray-600 mt-2">
           Simple pricing for businesses using Flowmerce
         </p>
@@ -65,16 +62,10 @@ export default function PlansPage() {
           <div
             key={plan.code}
             className={`rounded-2xl p-6 shadow-md transition transform hover:scale-[1.02]
-            ${
-              plan.highlight
-                ? "bg-white  shadow-lg"
-                : "bg-white"
-            }`}
+            ${plan.highlight ? "bg-white  shadow-lg" : "bg-white"}`}
           >
             {/* Plan name */}
-            <h2 className="text-xl font-semibold text-gray-800">
-              {plan.name}
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-800">{plan.name}</h2>
 
             {/* Price */}
             <p className="text-3xl font-bold text-[#ff5c00] mt-3">
