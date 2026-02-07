@@ -16,12 +16,14 @@ const Reports = () => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [autoScroll, setAutoScroll] = useState(true);
+  const token = localStorage.getItem("access_token");
 
   const handleScroll = () => {
     const container = chatContainerRef.current;
     if (!container) return;
     const isAtBottom =
-      container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
+      container.scrollHeight - container.scrollTop <=
+      container.clientHeight + 10;
     setAutoScroll(isAtBottom);
   };
 
@@ -41,13 +43,44 @@ const Reports = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
+    console.log("TOKEN:", token);
 
     try {
       const response = await fetch("http://localhost:8000/api/assistant/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ message: input.trim() }),
       });
+
+      // 👇 Handle permission error nicely
+      if (response.status === 403) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content:
+              "🚫 This feature is part of our premium plans.\n\nVisit the Billing page to explore subscription options and unlock the AI business assistant.",
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
+
+      // Optional: handle unauthenticated users
+      if (response.status === 401) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Your session expired. Please log in again.",
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
