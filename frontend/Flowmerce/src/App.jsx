@@ -15,6 +15,7 @@ import CreateOrder from "./components/CreateOrder";
 import EditOrder from "./components/EditOrder";
 import Billing from "./components/Billing";
 import AdminSubscriptions from "./components/AdminSubscription";
+import PlansPage from "./components/PlansPage";
 
 import { useEffect } from "react";
 
@@ -53,6 +54,7 @@ const AppRoutes = () => {
         <Route path="editorder/:id" element={<EditOrder />} />
         <Route path="billing" element={<Billing />} />
         <Route path="admin/subscriptions" element={<AdminSubscriptions />} />
+        <Route path="plans" element={<PlansPage />} />
       </Route>
     </Routes>
   );
