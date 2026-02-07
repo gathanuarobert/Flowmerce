@@ -282,6 +282,9 @@ class Subscription(models.Model):
         choices=STATUS_CHOICES,
         default='pending'
     )
+    
+    ai_requests_used = models.IntegerField(default=0)
+    ai_request_limit = models.IntegerField(default=200)
 
     auto_renew = models.BooleanField(default=True)
     is_blocked = models.BooleanField(default=False)
