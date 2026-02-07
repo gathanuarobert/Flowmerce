@@ -7,6 +7,8 @@ from .models import Order, OrderItem
 from rest_framework.permissions import IsAuthenticated
 from .permissions import CanUseAI
 import requests, json, traceback
+from rest_framework.response import Response
+from rest_framework import status
 
 
 class FlowmerceAssistantView(APIView):
@@ -21,18 +23,14 @@ class FlowmerceAssistantView(APIView):
         today = timezone.now()
         month_start = today.replace(day=1)
 
-        month_orders = Order.objects.filter(
-            employee=user,
-            created_at__gte=month_start
-        )
+        month_orders = Order.objects.filter(employee=user, created_at__gte=month_start)
 
         revenue = month_orders.aggregate(total=Sum("amount"))["total"] or 0
         order_count = month_orders.count()
 
         top_qs = (
             OrderItem.objects.filter(
-                order__employee=user,
-                order__created_at__gte=month_start
+                order__employee=user, order__created_at__gte=month_start
             )
             .values("product__title")
             .annotate(total_sold=Sum("quantity"))
@@ -40,12 +38,9 @@ class FlowmerceAssistantView(APIView):
         )
 
         top = (
-            ", ".join(
-                f"{p['product__title']} ({p['total_sold']} sold)"
-                for p in top_qs
-            )
-        if top_qs.exists()
-        else "No sales data available yet."
+            ", ".join(f"{p['product__title']} ({p['total_sold']} sold)" for p in top_qs)
+            if top_qs.exists()
+            else "No sales data available yet."
         )
 
         stats = {
@@ -57,9 +52,44 @@ class FlowmerceAssistantView(APIView):
         cache.set(cache_key, stats, timeout=1800)
         return stats
 
-
     def post(self, request):
         print("⚡ [Flowmerce AI] Fast request received")
+        # Admin always allowed
+        if request.user.is_staff or request.user.is_superuser:
+            subscription = None
+        else:
+            try:
+                subscription = request.user.subscription
+            except:
+                return Response(
+                {"message": "You need an active subscription to use the AI assistant."},
+                status=status.HTTP_403_FORBIDDEN,
+                )
+
+            if subscription.status != "active":
+                return Response(
+                    {"message": "Your subscription is not active."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            plan_code = subscription.plan.code.lower()
+
+            if plan_code == "basic":
+                return Response(
+                    {
+                        "message": "🚀 The AI assistant is available on Pro and Premium plans. Please upgrade to use it."
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            if plan_code == "pro" and subscription.ai_requests_used >= 50:
+                return Response(
+                    {
+                        "message": "You’ve reached your monthly AI limit (50 requests). Upgrade to Premium for unlimited access."
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
 
         try:
             user_message = request.data.get("message", "").strip()
@@ -87,30 +117,22 @@ User: {user_message}
                 "prompt": prompt.strip(),
                 "stream": True,
                 "options": {
-    "temperature": 0.25,     
-    "top_p": 0.9,            
-    "top_k": 40,
-    
-    
-    "num_predict": 180,     
-
-   
-    "num_ctx": 512,          
-    "repeat_penalty": 1.05, 
-
-   
-    "stop": ["User:", "Flowmerce AI:", "\n\n"],  
-
-   
-    "seed": 3
-}
+                    "temperature": 0.25,
+                    "top_p": 0.9,
+                    "top_k": 40,
+                    "num_predict": 180,
+                    "num_ctx": 512,
+                    "repeat_penalty": 1.05,
+                    "stop": ["User:", "Flowmerce AI:", "\n\n"],
+                    "seed": 3,
+                },
             }
 
             session = requests.post(
                 "http://localhost:11434/api/generate",
                 json=payload,
                 stream=True,
-                timeout=60
+                timeout=60,
             )
 
             def stream():
@@ -120,13 +142,15 @@ User: {user_message}
                 try:
                     sub = request.user.subscription
                     if sub.plan.code == "pro":
-                        sub.ai_requests_used = getattr(sub, "ai_requests_used", 0) + 1
+                        sub.ai_requests_used += 1
                         sub.save(update_fields=["ai_requests_used"])
                 except:
                     pass
 
                 try:
-                    for raw in session.iter_lines(decode_unicode=False, delimiter=b"\n"):
+                    for raw in session.iter_lines(
+                        decode_unicode=False, delimiter=b"\n"
+                    ):
 
                         if not raw:
                             continue
@@ -141,7 +165,9 @@ User: {user_message}
                     print("❌ Streaming crash:", e)
                     yield "\n⚠️ Streaming error."
 
-            return StreamingHttpResponse(stream(), content_type="text/plain; charset=utf-8")
+            return StreamingHttpResponse(
+                stream(), content_type="text/plain; charset=utf-8"
+            )
 
         except Exception as e:
             print("❌ ERROR:", e)
