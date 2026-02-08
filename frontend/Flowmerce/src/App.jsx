@@ -1,5 +1,11 @@
 import React from "react";
-import { BrowserRouter, Route, Routes, useNavigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import Products from "./pages/Products";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -52,8 +58,8 @@ const AppRoutes = () => {
         <Route path="editproduct/:id" element={<EditProduct />} />
         <Route path="createorder" element={<CreateOrder />} />
         <Route path="editorder/:id" element={<EditOrder />} />
-        <Route path="billing" element={<Billing />} />
         <Route path="admin/subscriptions" element={<AdminSubscriptions />} />
+        <Route path="billing" element={<Billing />} />
         <Route path="plans" element={<PlansPage />} />
       </Route>
     </Routes>
