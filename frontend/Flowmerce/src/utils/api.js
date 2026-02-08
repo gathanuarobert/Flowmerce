@@ -46,12 +46,19 @@ api.interceptors.response.use(
 
     // 🔐 Handle subscription required (402)
     if (status === 402 && data?.code === 'SUBSCRIPTION_REQUIRED') {
-      // Optional toast (nice UX)
       toast.info(data.detail || 'Subscription required');
-
-      // Redirect to billing
       window.location.href = '/billing';
+      return Promise.reject(error);
+    }
 
+    // 🚫 Handle forbidden (no subscription / plan restriction)
+    if (status === 403) {
+      toast.info(
+        data?.message ||
+        'Your plan does not allow this feature. Please upgrade.'
+      );
+
+      window.location.href = '/plans';
       return Promise.reject(error);
     }
 
@@ -61,7 +68,6 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Handle all other errors
     handleError(error);
     return Promise.reject(error);
   }
